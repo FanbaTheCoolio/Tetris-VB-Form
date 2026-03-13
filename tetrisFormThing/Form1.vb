@@ -42,8 +42,17 @@ Public Class Form1
     Dim tileSize As Integer = 40
     Dim gridHeight As Integer = 19
     Dim gridWidth As Integer = 9
-    Dim board(gridWidth, gridHeight) As Integer
-
+    Dim board(gridWidth, gridHeight) As TetromintoType
+    Enum TetromintoType
+        None
+        I_Piece
+        O_Piece
+        T_Piece
+        L_Piece
+        J_Piece
+        S_Piece
+        Z_Piece
+    End Enum
     '1   Cyan (I piece)
     '2   Yellow (O piece)
     '3   Purple (T piece)
@@ -71,11 +80,17 @@ Public Class Form1
         Debug.WriteLine(gridOffsetStartX)
         For columns As Integer = 0 To gridHeight
             For rows As Integer = 0 To gridWidth
-                board(rows, columns) = 0
+                board(rows, columns) = TetromintoType.None
             Next
         Next
 
-
+        'board(4, 5) = TetromintoType.S_Piece
+        'board(7, 16) = TetromintoType.O_Piece
+        'board(6, 8) = TetromintoType.T_Piece
+        'board(2, 5) = TetromintoType.Z_Piece
+        'board(5, 6) = TetromintoType.O_Piece
+        'board(7, 3) = TetromintoType.L_Piece
+        'board(3, 4) = TetromintoType.J_Piece
         ' **********************************************************************
         ' ** The code above will run once when the application loads / starts **
         ' **********************************************************************
@@ -208,22 +223,24 @@ Public Class Form1
     ' ** Put the subs and functions for your application below here **
     ' ****************************************************************
 
-    Function getTetrominoColour(value As Integer) As Color
+    Function getTetrominoColour(value As TetromintoType) As Color
         Select Case value
-            Case 1
+            Case TetromintoType.I_Piece
                 Return Color.Cyan
-            Case 2
+            Case TetromintoType.O_Piece
                 Return Color.Yellow
-            Case 3
+            Case TetromintoType.T_Piece
                 Return Color.Purple
-            Case 4
+            Case TetromintoType.L_Piece
                 Return Color.Orange
-            Case 5
+            Case TetromintoType.J_Piece
                 Return Color.Blue
-            Case 6
+            Case TetromintoType.S_Piece
                 Return Color.Green
-            Case 7
+            Case TetromintoType.Z_Piece
                 Return Color.Red
+            Case TetromintoType.None
+                Return Color.Black
             Case Else
                 Return Color.Black
         End Select
@@ -237,8 +254,20 @@ Public Class Form1
 
 
 #Region "User Defined Classes"
-    Class tetromino
+    Class Tetromino
+        Private xPosition, yPosition As Integer
+        Private shapeType
+        Private isActive As Boolean
+        ' Private shape  i'll do this later since its gonna be awkward.
+        Sub New()
+            xPosition = 10
+            yPosition = 0
+            isActive = True
+        End Sub
 
+        Sub update()
+
+        End Sub
     End Class
 
 #End Region
