@@ -43,6 +43,9 @@ Public Class Form1
     Dim gridHeight As Integer = 19
     Dim gridWidth As Integer = 9
     Dim board(gridWidth, gridHeight) As TetromintoType
+    Dim currentTetromino As Tetromino
+    Dim tetrominoUpdateTimer As Integer = 0
+    Dim tetrominoUpdateInterval As Integer = 30 ' In miliseconds
     Enum TetromintoType
         None
         I_Piece
@@ -74,15 +77,18 @@ Public Class Form1
         ' ** The code below will run once when the application loads / starts **
         ' **********************************************************************
 
+        currentTetromino = New Tetromino(TetromintoType.J_Piece)
+
         gridOffsetStartX = (ClientSize.Width - (tileSize * gridWidth)) / 2
 
 
-        Debug.WriteLine(gridOffsetStartX)
         For columns As Integer = 0 To gridHeight
             For rows As Integer = 0 To gridWidth
                 board(rows, columns) = TetromintoType.None
             Next
         Next
+
+        board(currentTetromino.getXPosition, currentTetromino.getYPosition) = currentTetromino.getShapeType
 
         'board(4, 5) = TetromintoType.S_Piece
         'board(7, 16) = TetromintoType.O_Piece
@@ -101,6 +107,21 @@ Public Class Form1
 #Region "Game State Update"
     ' All game updates should be put here e.g. reading keyboard/ mouse, updating sprite positions (but NOT drawing them), calculations etc.
     Private Sub GameUpdate()
+        'TODO : ADD THE RANDOM BAG SYSTEM FOR TETROMINOS LATER
+
+        tetrominoUpdateTimer += 1
+
+        If tetrominoUpdateTimer >= tetrominoUpdateInterval Then
+            currentTetromino.update()
+            Debug.WriteLine("X : " & currentTetromino.getXPosition)
+            Debug.WriteLine("Y : " & currentTetromino.getYPosition)
+            Debug.WriteLine("Previous X : " & currentTetromino.getPreviousXPosition)
+            Debug.WriteLine("Previous Y : " & currentTetromino.getPreviousYPosition)
+            board(currentTetromino.getXPosition, currentTetromino.getYPosition) = currentTetromino.getShapeType
+            board(currentTetromino.getPreviousXPosition, currentTetromino.getPreviousYPosition) = TetromintoType.None
+            tetrominoUpdateTimer = 0
+        End If
+
 
 
 #Region "Check Keys"
@@ -201,10 +222,11 @@ Public Class Form1
 
         For columns = 0 To gridHeight
             For rows = 0 To gridWidth
-                g.DrawRectangle(Pens.Gray, gridOffsetStartX + (rows * tileSize), gridOffsetStartY + (columns * tileSize), tileSize, tileSize)
-
-                If board(rows, columns) <> 0 Then
-                    g.FillRectangle(New SolidBrush(getTetrominoColour(board(rows, columns))), gridOffsetStartX + (rows * tileSize), gridOffsetStartY + (columns * tileSize), tileSize, tileSize)
+                Dim currentTileXPosition = gridOffsetStartX + (rows * tileSize)
+                Dim currentTileYPosition = gridOffsetStartY + (columns * tileSize)
+                g.DrawRectangle(Pens.Gray, currentTileXPosition, currentTileYPosition, tileSize, tileSize)
+                If board(rows, columns) <> TetromintoType.None Then
+                    g.FillRectangle(New SolidBrush(getTetrominoColour(board(rows, columns))), currentTileXPosition, currentTileYPosition, tileSize, tileSize)
                 End If
             Next
         Next
@@ -256,17 +278,38 @@ Public Class Form1
 #Region "User Defined Classes"
     Class Tetromino
         Private xPosition, yPosition As Integer
-        Private shapeType
+        Private shapeType As TetromintoType
+        Private previousXPosition, previousYPosition As Integer
         Private isActive As Boolean
         ' Private shape  i'll do this later since its gonna be awkward.
-        Sub New()
-            xPosition = 10
+        Sub New(shapeType As TetromintoType)
+            xPosition = 5
             yPosition = 0
             isActive = True
+            Me.shapeType = shapeType
         End Sub
-
-        Sub update()
-
+        Private Sub updatePreviousPosition()
+            previousXPosition = xPosition
+            previousYPosition = yPosition
+        End Sub
+        Public Function getShapeType() As TetromintoType
+            Return shapeType
+        End Function
+        Public Function getPreviousXPosition() As Integer
+            Return previousXPosition
+        End Function
+        Public Function getPreviousYPosition() As Integer
+            Return previousYPosition
+        End Function
+        Public Function getXPosition() As Integer
+            Return xPosition
+        End Function
+        Public Function getYPosition() As Integer
+            Return yPosition
+        End Function
+        Public Sub update()
+            updatePreviousPosition()
+            yPosition += 1
         End Sub
     End Class
 
