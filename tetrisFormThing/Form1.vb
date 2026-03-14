@@ -16,7 +16,7 @@ Public Class Form1
     Public ApplicationName As String = "2D Gfx Framework"
     Public Shared DisplaySize As Size = New Size(800, 800)
     Public FrameInterval As Integer = 16 ' Time in milliseconds between each frame render. 16 milliseconds is approximately 60 FPS (Frames Per Second)
-    Public KeyRepeatInterval As Integer = 0 ' If a key is held down, this is the number of frames between each repeat. Set as 0 for no delay
+    Public KeyRepeatInterval As Integer = 10 ' If a key is held down, this is the number of frames between each repeat. Set as 0 for no delay
 
 
 #Region "Framework Variables"
@@ -39,12 +39,17 @@ Public Class Form1
 
     Dim gridOffsetStartX As Integer '= ClientSize.Width * 0.85
     Dim gridOffsetStartY As Integer = 0
+
     Dim tileSize As Integer = 40
     Dim gridHeight As Integer = 19
-    Dim gridWidth As Integer = 9
+    Dim gridWidth As Integer = 8
+
     Dim board(gridWidth, gridHeight) As TetromintoType
+
+    Dim borderColor As Color = Color.RebeccaPurple
+
     Dim currentTetromino As Tetromino
-    Dim tetrominoUpdateTimer As Integer = 0
+    Dim tetrominoDelayCounter As Integer = 0
     Dim tetrominoUpdateInterval As Integer = 30 ' In miliseconds
     Enum TetromintoType
         None
@@ -55,6 +60,10 @@ Public Class Form1
         J_Piece
         S_Piece
         Z_Piece
+    End Enum
+    Enum DirectionType
+        Left
+        Right
     End Enum
     '1   Cyan (I piece)
     '2   Yellow (O piece)
@@ -79,7 +88,7 @@ Public Class Form1
 
         currentTetromino = New Tetromino(TetromintoType.J_Piece)
 
-        gridOffsetStartX = (ClientSize.Width - (tileSize * gridWidth)) / 2
+        gridOffsetStartX = (ClientSize.Width - (tileSize * gridWidth) - tileSize) / 2
 
 
         For columns As Integer = 0 To gridHeight
@@ -88,7 +97,6 @@ Public Class Form1
             Next
         Next
 
-        board(currentTetromino.getXPosition, currentTetromino.getYPosition) = currentTetromino.getShapeType
 
         'board(4, 5) = TetromintoType.S_Piece
         'board(7, 16) = TetromintoType.O_Piece
@@ -109,17 +117,17 @@ Public Class Form1
     Private Sub GameUpdate()
         'TODO : ADD THE RANDOM BAG SYSTEM FOR TETROMINOS LATER
 
-        tetrominoUpdateTimer += 1
+        tetrominoDelayCounter += 1
 
-        If tetrominoUpdateTimer >= tetrominoUpdateInterval Then
+        If tetrominoDelayCounter >= tetrominoUpdateInterval Then
             currentTetromino.update()
-            Debug.WriteLine("X : " & currentTetromino.getXPosition)
-            Debug.WriteLine("Y : " & currentTetromino.getYPosition)
-            Debug.WriteLine("Previous X : " & currentTetromino.getPreviousXPosition)
-            Debug.WriteLine("Previous Y : " & currentTetromino.getPreviousYPosition)
-            board(currentTetromino.getXPosition, currentTetromino.getYPosition) = currentTetromino.getShapeType
-            board(currentTetromino.getPreviousXPosition, currentTetromino.getPreviousYPosition) = TetromintoType.None
-            tetrominoUpdateTimer = 0
+            'Debug.WriteLine("X : " & currentTetromino.getXPosition)
+            'Debug.WriteLine("Y : " & currentTetromino.getYPosition)
+            'Debug.WriteLine("Previous X : " & currentTetromino.getPreviousXPosition)
+            'Debug.WriteLine("Previous Y : " & currentTetromino.getPreviousYPosition)
+            'board(currentTetromino.getXPosition, currentTetromino.getYPosition) = currentTetromino.getShapeType
+            'board(currentTetromino.getPreviousXPosition, currentTetromino.getPreviousYPosition) = TetromintoType.None
+            tetrominoDelayCounter = 0
         End If
 
 
@@ -136,26 +144,40 @@ Public Class Form1
 
 
             If KeyPressed.ContainsKey(37) Then
-                If KeyPressed(37) = True Then
+                If KeyPressed(37) Then
                     ' *********************************************************
-                    ' ** The code below runs when the LET (37) key is pressed **
+                    ' ** The code below runs when the LEFT (37) key is pressed **
                     ' *********************************************************
 
+                    attemptMoveLeft()
 
                     ' *********************************************************
-                    ' ** The code above runs when the LET (37) key is pressed **
+                    ' ** The code above runs when the LEFT (37) key is pressed **
                     ' *********************************************************
                     KeyDelayCounter = 0
                 End If
             End If
 
+            If KeyPressed.ContainsKey(65) Then
+                If KeyPressed(65) Then
+                    ' *********************************************************
+                    ' ** The code below runs when the A (65) key is pressed **
+                    ' *********************************************************
 
+                    attemptMoveLeft()
+
+                    ' *********************************************************
+                    ' ** The code above runs when the A (65) key is pressed **
+                    ' *********************************************************
+                    KeyDelayCounter = 0
+                End If
+            End If
             If KeyPressed.ContainsKey(39) Then
-                If KeyPressed(39) = True Then
+                If KeyPressed(39) Then
                     ' *********************************************************
                     ' ** The code below runs when the RIGHT (39) key is pressed **
                     ' *********************************************************
-
+                    attemptMoveRight()
                     ' *********************************************************
                     ' ** The code above runs when the RIGHT (39) key is pressed **
                     ' *********************************************************
@@ -164,7 +186,18 @@ Public Class Form1
             End If
 
 
-
+            If KeyPressed.ContainsKey(68) Then
+                If KeyPressed(68) Then
+                    ' *********************************************************
+                    ' ** The code below runs when the D (68) key is pressed **
+                    ' *********************************************************
+                    attemptMoveRight()
+                    ' *********************************************************
+                    ' ** The code above runs when the D (68) key is pressed **
+                    ' *********************************************************
+                    KeyDelayCounter = 0
+                End If
+            End If
 
         Else
             KeyDelayCounter = KeyDelayCounter + 1
@@ -215,23 +248,12 @@ Public Class Form1
     ' A value of 16 equates to about 60 frames per second (FPS) [1000 / 60 = 16.67]
     Private Sub GameDraw(ByVal g As Graphics)
 
-        g.Clear(Color.Black)
+
         ' ********************************************
         ' ** Put your code to draw each frame below **
         ' ********************************************
 
-        For columns = 0 To gridHeight
-            For rows = 0 To gridWidth
-                Dim currentTileXPosition = gridOffsetStartX + (rows * tileSize)
-                Dim currentTileYPosition = gridOffsetStartY + (columns * tileSize)
-                g.DrawRectangle(Pens.Gray, currentTileXPosition, currentTileYPosition, tileSize, tileSize)
-                If board(rows, columns) <> TetromintoType.None Then
-                    g.FillRectangle(New SolidBrush(getTetrominoColour(board(rows, columns))), currentTileXPosition, currentTileYPosition, tileSize, tileSize)
-                End If
-            Next
-        Next
-
-
+        drawTetris(g)
 
         ' ********************************************
         ' ** Put your code to draw each frame above **
@@ -244,7 +266,39 @@ Public Class Form1
     ' ****************************************************************
     ' ** Put the subs and functions for your application below here **
     ' ****************************************************************
+    Sub drawTetris(g As Graphics)
+        g.Clear(Color.Black)
+        drawBorders(g)
+        drawLockedPieces(g)
+        drawCurrentPiece(g)
+    End Sub
+    Sub drawBorders(g As Graphics)
+        g.FillRectangle(New SolidBrush(borderColor), 0, 0, gridOffsetStartX, ClientSize.Height)
+        g.FillRectangle(New SolidBrush(borderColor), gridOffsetStartX + (tileSize * gridWidth) + tileSize, 0, ClientSize.Width, ClientSize.Height)
+    End Sub
+    Sub drawCurrentPiece(g As Graphics)
 
+        Dim currentTileXPosition = gridOffsetStartX + (currentTetromino.getXPosition * tileSize)
+        Dim currentTileYPosition = gridOffsetStartY + (currentTetromino.getYPosition * tileSize)
+        g.FillRectangle(New SolidBrush(currentTetromino.getTileColour), currentTileXPosition, currentTileYPosition, tileSize, tileSize)
+
+
+    End Sub
+    Sub drawLockedPieces(g As Graphics)
+        For columns = 0 To gridHeight
+            For rows = 0 To gridWidth
+                Dim currentTileXPosition = gridOffsetStartX + (rows * tileSize)
+                Dim currentTileYPosition = gridOffsetStartY + (columns * tileSize)
+                g.DrawRectangle(Pens.Gray, currentTileXPosition, currentTileYPosition, tileSize, tileSize)
+                If board(rows, columns) <> TetromintoType.None Then
+                    g.FillRectangle(New SolidBrush(getTetrominoColour(board(rows, columns))), currentTileXPosition, currentTileYPosition, tileSize, tileSize)
+                End If
+            Next
+        Next
+    End Sub
+    Function shouldBeLocked()
+
+    End Function
     Function getTetrominoColour(value As TetromintoType) As Color
         Select Case value
             Case TetromintoType.I_Piece
@@ -267,7 +321,34 @@ Public Class Form1
                 Return Color.Black
         End Select
     End Function
+    Sub attemptMoveLeft()
+        If tryTransformation(currentTetromino.getXPosition - 1, currentTetromino.getYPosition) Then
+            currentTetromino.movePiece(DirectionType.Left)
+        End If
+    End Sub
+    Sub attemptMoveRight()
+        If tryTransformation(currentTetromino.getXPosition + 1, currentTetromino.getYPosition) Then
+            currentTetromino.movePiece(DirectionType.Right)
+        End If
+    End Sub
+    Function tryTransformation(newX As Integer, newY As Integer) As Boolean
+        Dim xPosCondition As Boolean = (newX >= 0 And newX <= gridWidth)
+        Dim yPosCondition As Boolean = (newY >= 0 And newY <= gridHeight)
 
+
+        Debug.WriteLine("X Pos : " & xPosCondition)
+        Debug.WriteLine("Y Pos : " & yPosCondition)
+
+
+        If xPosCondition And yPosCondition Then
+            Dim isSpotClear As Boolean = (board(newX, newY) = TetromintoType.None)
+            Debug.WriteLine("Is Spot Clear : " & isSpotClear)
+            If isSpotClear Then
+                Return True
+            End If
+        End If
+        Return False
+    End Function
 
     ' ****************************************************************
     ' ** Put the subs and functions for your application above here **
@@ -277,20 +358,41 @@ Public Class Form1
 
 #Region "User Defined Classes"
     Class Tetromino
-        Private xPosition, yPosition As Integer
+        Private xPosition, yPosition, boardWidth, boardHeight As Integer
         Private shapeType As TetromintoType
         Private previousXPosition, previousYPosition As Integer
+
         Private isActive As Boolean
         ' Private shape  i'll do this later since its gonna be awkward.
         Sub New(shapeType As TetromintoType)
+
             xPosition = 5
             yPosition = 0
             isActive = True
             Me.shapeType = shapeType
         End Sub
+        Public Function getTileColour() As Color
+            Return Form1.getTetrominoColour(shapeType)
+        End Function
         Private Sub updatePreviousPosition()
             previousXPosition = xPosition
             previousYPosition = yPosition
+        End Sub
+        Public Sub movePiece(direction As DirectionType)
+            If direction = DirectionType.Left Then
+                moveLeft()
+            ElseIf direction = DirectionType.Right Then
+                moveRight()
+            End If
+        End Sub
+
+        Private Sub moveLeft()
+            xPosition -= 1
+            Debug.WriteLine("Left")
+        End Sub
+        Private Sub moveRight()
+            xPosition += 1
+            Debug.WriteLine("Right")
         End Sub
         Public Function getShapeType() As TetromintoType
             Return shapeType
@@ -307,7 +409,9 @@ Public Class Form1
         Public Function getYPosition() As Integer
             Return yPosition
         End Function
+
         Public Sub update()
+
             updatePreviousPosition()
             yPosition += 1
         End Sub
