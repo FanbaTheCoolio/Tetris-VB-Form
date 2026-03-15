@@ -28,7 +28,8 @@ Public Class Form1
     Public MouseLeftDown As Boolean = False ' Is the left mouse button currently down?
     Public MouseRightDown As Boolean = False ' Is the right mouse button currently down?
     Public MouseX, MouseY As Integer ' These hold the current x and y positions of the mousepointer relative to the upper left corner of the form
-    Public rand As Random = New Random
+    Public Shared rand As Random = New Random
+
 #End Region
 
 
@@ -41,17 +42,18 @@ Public Class Form1
     Dim gridOffsetStartY As Integer = 0
 
     Dim tileSize As Integer = 40
-    Dim gridHeight As Integer = 19
+    Dim gridHeight As Integer = 18
     Dim gridWidth As Integer = 8
 
-    Dim board(gridWidth, gridHeight) As TetromintoType
+    Dim board(gridWidth, gridHeight) As TetrominoType
 
     Dim borderColor As Color = Color.RebeccaPurple
 
     Dim currentTetromino As Tetromino
+    Dim tetrominoBag As New Queue(Of TetrominoType)
     Dim tetrominoDelayCounter As Integer = 0
     Dim tetrominoUpdateInterval As Integer = 30 ' In miliseconds
-    Enum TetromintoType
+    Enum TetrominoType
         None
         I_Piece
         O_Piece
@@ -85,26 +87,28 @@ Public Class Form1
         ' **********************************************************************
         ' ** The code below will run once when the application loads / starts **
         ' **********************************************************************
+        Randomize()
 
-        currentTetromino = New Tetromino(TetromintoType.J_Piece)
+        RefillBag()
+        currentTetromino = New Tetromino(tetrominoBag.Dequeue)
 
         gridOffsetStartX = (ClientSize.Width - (tileSize * gridWidth) - tileSize) / 2
 
 
-        For columns As Integer = 0 To gridHeight
-            For rows As Integer = 0 To gridWidth
-                board(rows, columns) = TetromintoType.None
+        For y As Integer = 0 To gridHeight
+            For x As Integer = 0 To gridWidth
+                board(x, y) = TetrominoType.None
             Next
         Next
 
 
-        'board(4, 5) = TetromintoType.S_Piece
-        'board(7, 16) = TetromintoType.O_Piece
-        'board(6, 8) = TetromintoType.T_Piece
-        'board(2, 5) = TetromintoType.Z_Piece
-        'board(5, 6) = TetromintoType.O_Piece
-        'board(7, 3) = TetromintoType.L_Piece
-        'board(3, 4) = TetromintoType.J_Piece
+        'board(4, 5) = TetrominoType.S_Piece
+        'board(7, 16) = TetrominoType.O_Piece
+        'board(6, 8) = TetrominoType.T_Piece
+        'board(2, 5) = TetrominoType.Z_Piece
+        'board(5, 6) = TetrominoType.O_Piece
+        'board(7, 3) = TetrominoType.L_Piece
+        'board(3, 4) = TetrominoType.J_Piece
         ' **********************************************************************
         ' ** The code above will run once when the application loads / starts **
         ' **********************************************************************
@@ -113,20 +117,27 @@ Public Class Form1
 
 
 #Region "Game State Update"
-    ' All game updates should be put here e.g. reading keyboard/ mouse, updating sprite positions (but NOT drawing them), calculations etc.
+    ' All game Updates should be put here e.g. reading keyboard/ mouse, updating sprite positions (but NOT drawing them), calculations etc.
     Private Sub GameUpdate()
         'TODO : ADD THE RANDOM BAG SYSTEM FOR TETROMINOS LATER
 
         tetrominoDelayCounter += 1
 
         If tetrominoDelayCounter >= tetrominoUpdateInterval Then
-            currentTetromino.update()
-            'Debug.WriteLine("X : " & currentTetromino.getXPosition)
-            'Debug.WriteLine("Y : " & currentTetromino.getYPosition)
-            'Debug.WriteLine("Previous X : " & currentTetromino.getPreviousXPosition)
-            'Debug.WriteLine("Previous Y : " & currentTetromino.getPreviousYPosition)
-            'board(currentTetromino.getXPosition, currentTetromino.getYPosition) = currentTetromino.getShapeType
-            'board(currentTetromino.getPreviousXPosition, currentTetromino.getPreviousYPosition) = TetromintoType.None
+            Debug.WriteLine("Y : " & currentTetromino.GetYPosition)
+            Debug.WriteLine(ShouldBeLocked)
+            If ShouldBeLocked() Then
+                LockPiece()
+            End If
+
+            currentTetromino.Update()
+
+            'Debug.WriteLine("X : " & currentTetromino.GetXPosition)
+            'Debug.WriteLine("Y : " & currentTetromino.GetYPosition)
+            'Debug.WriteLine("Previous X : " & currentTetromino.GetPreviousXPosition)
+            'Debug.WriteLine("Previous Y : " & currentTetromino.GetPreviousYPosition)
+            'board(currentTetromino.GetXPosition, currentTetromino.GetYPosition) = currentTetromino.GetShapeType
+            'board(currentTetromino.GetPreviousXPosition, currentTetromino.GetPreviousYPosition) = TetrominoType.None
             tetrominoDelayCounter = 0
         End If
 
@@ -149,7 +160,7 @@ Public Class Form1
                     ' ** The code below runs when the LEFT (37) key is pressed **
                     ' *********************************************************
 
-                    attemptMoveLeft()
+                    AttemptMoveLeft()
 
                     ' *********************************************************
                     ' ** The code above runs when the LEFT (37) key is pressed **
@@ -164,7 +175,7 @@ Public Class Form1
                     ' ** The code below runs when the A (65) key is pressed **
                     ' *********************************************************
 
-                    attemptMoveLeft()
+                    AttemptMoveLeft()
 
                     ' *********************************************************
                     ' ** The code above runs when the A (65) key is pressed **
@@ -177,7 +188,7 @@ Public Class Form1
                     ' *********************************************************
                     ' ** The code below runs when the RIGHT (39) key is pressed **
                     ' *********************************************************
-                    attemptMoveRight()
+                    AttemptMoveRight()
                     ' *********************************************************
                     ' ** The code above runs when the RIGHT (39) key is pressed **
                     ' *********************************************************
@@ -191,7 +202,7 @@ Public Class Form1
                     ' *********************************************************
                     ' ** The code below runs when the D (68) key is pressed **
                     ' *********************************************************
-                    attemptMoveRight()
+                    AttemptMoveRight()
                     ' *********************************************************
                     ' ** The code above runs when the D (68) key is pressed **
                     ' *********************************************************
@@ -253,7 +264,7 @@ Public Class Form1
         ' ** Put your code to draw each frame below **
         ' ********************************************
 
-        drawTetris(g)
+        DrawTetris(g)
 
         ' ********************************************
         ' ** Put your code to draw each frame above **
@@ -266,72 +277,98 @@ Public Class Form1
     ' ****************************************************************
     ' ** Put the subs and functions for your application below here **
     ' ****************************************************************
-    Sub drawTetris(g As Graphics)
+    Sub DrawTetris(g As Graphics)
         g.Clear(Color.Black)
-        drawBorders(g)
-        drawLockedPieces(g)
-        drawCurrentPiece(g)
+        DrawBorders(g)
+        DrawLockedPieces(g)
+        DrawCurrentPiece(g)
     End Sub
-    Sub drawBorders(g As Graphics)
+    Sub DrawBorders(g As Graphics)
         g.FillRectangle(New SolidBrush(borderColor), 0, 0, gridOffsetStartX, ClientSize.Height)
         g.FillRectangle(New SolidBrush(borderColor), gridOffsetStartX + (tileSize * gridWidth) + tileSize, 0, ClientSize.Width, ClientSize.Height)
     End Sub
-    Sub drawCurrentPiece(g As Graphics)
+    Sub DrawCurrentPiece(g As Graphics)
 
-        Dim currentTileXPosition = gridOffsetStartX + (currentTetromino.getXPosition * tileSize)
-        Dim currentTileYPosition = gridOffsetStartY + (currentTetromino.getYPosition * tileSize)
-        g.FillRectangle(New SolidBrush(currentTetromino.getTileColour), currentTileXPosition, currentTileYPosition, tileSize, tileSize)
+        Dim currentTileXPosition = gridOffsetStartX + (currentTetromino.GetXPosition * tileSize)
+        Dim currentTileYPosition = gridOffsetStartY + (currentTetromino.GetYPosition * tileSize)
+        g.FillRectangle(New SolidBrush(currentTetromino.GetTileColour), currentTileXPosition, currentTileYPosition, tileSize, tileSize)
 
 
     End Sub
-    Sub drawLockedPieces(g As Graphics)
+    Sub DrawLockedPieces(g As Graphics)
         For columns = 0 To gridHeight
             For rows = 0 To gridWidth
                 Dim currentTileXPosition = gridOffsetStartX + (rows * tileSize)
                 Dim currentTileYPosition = gridOffsetStartY + (columns * tileSize)
                 g.DrawRectangle(Pens.Gray, currentTileXPosition, currentTileYPosition, tileSize, tileSize)
-                If board(rows, columns) <> TetromintoType.None Then
-                    g.FillRectangle(New SolidBrush(getTetrominoColour(board(rows, columns))), currentTileXPosition, currentTileYPosition, tileSize, tileSize)
+                If board(rows, columns) <> TetrominoType.None Then
+                    g.FillRectangle(New SolidBrush(GetTetrominoColour(board(rows, columns))), currentTileXPosition, currentTileYPosition, tileSize, tileSize)
                 End If
             Next
         Next
     End Sub
-    Function shouldBeLocked()
-
+    Function ShouldBeLocked()
+        If currentTetromino.GetYPosition < gridHeight Then
+            If board(currentTetromino.GetXPosition, currentTetromino.GetYPosition + 1) <> TetrominoType.None Then
+                Return True
+            End If
+        End If
+        If currentTetromino.GetYPosition >= (gridHeight) Then
+            Return True
+        End If
+        Return False
     End Function
-    Function getTetrominoColour(value As TetromintoType) As Color
+
+    Sub LockPiece()
+        board(currentTetromino.GetXPosition, currentTetromino.GetYPosition) = currentTetromino.GetShapeType
+        If tetrominoBag.IsEmpty Then
+            RefillBag()
+        End If
+        currentTetromino = New Tetromino(tetrominoBag.Dequeue)
+
+    End Sub
+
+    Sub RefillBag()
+        For Each piece As TetrominoType In [Enum].GetValues(GetType(TetrominoType))
+            If piece <> TetrominoType.None Then
+                tetrominoBag.Enqueue(piece)
+            End If
+        Next
+        tetrominoBag.Randomise()
+    End Sub
+    Function GetTetrominoColour(value As TetrominoType) As Color
         Select Case value
-            Case TetromintoType.I_Piece
+            Case TetrominoType.I_Piece
                 Return Color.Cyan
-            Case TetromintoType.O_Piece
+            Case TetrominoType.O_Piece
                 Return Color.Yellow
-            Case TetromintoType.T_Piece
+            Case TetrominoType.T_Piece
                 Return Color.Purple
-            Case TetromintoType.L_Piece
+            Case TetrominoType.L_Piece
                 Return Color.Orange
-            Case TetromintoType.J_Piece
+            Case TetrominoType.J_Piece
                 Return Color.Blue
-            Case TetromintoType.S_Piece
+            Case TetrominoType.S_Piece
                 Return Color.Green
-            Case TetromintoType.Z_Piece
+            Case TetrominoType.Z_Piece
                 Return Color.Red
-            Case TetromintoType.None
+            Case TetrominoType.None
                 Return Color.Black
             Case Else
                 Return Color.Black
         End Select
     End Function
-    Sub attemptMoveLeft()
-        If tryTransformation(currentTetromino.getXPosition - 1, currentTetromino.getYPosition) Then
-            currentTetromino.movePiece(DirectionType.Left)
+    Sub AttemptMoveLeft()
+        If TryTransformation(currentTetromino.GetXPosition - 1, currentTetromino.GetYPosition) Then
+            currentTetromino.MovePiece(DirectionType.Left)
         End If
     End Sub
-    Sub attemptMoveRight()
-        If tryTransformation(currentTetromino.getXPosition + 1, currentTetromino.getYPosition) Then
-            currentTetromino.movePiece(DirectionType.Right)
+    Sub AttemptMoveRight()
+        If TryTransformation(currentTetromino.GetXPosition + 1, currentTetromino.GetYPosition) Then
+            currentTetromino.MovePiece(DirectionType.Right)
         End If
     End Sub
-    Function tryTransformation(newX As Integer, newY As Integer) As Boolean
+    Function TryTransformation(newX As Integer, newY As Integer) As Boolean
         Dim xPosCondition As Boolean = (newX >= 0 And newX <= gridWidth)
         Dim yPosCondition As Boolean = (newY >= 0 And newY <= gridHeight)
 
@@ -341,7 +378,7 @@ Public Class Form1
 
 
         If xPosCondition And yPosCondition Then
-            Dim isSpotClear As Boolean = (board(newX, newY) = TetromintoType.None)
+            Dim isSpotClear As Boolean = (board(newX, newY) = TetrominoType.None)
             Debug.WriteLine("Is Spot Clear : " & isSpotClear)
             If isSpotClear Then
                 Return True
@@ -357,66 +394,97 @@ Public Class Form1
 
 
 #Region "User Defined Classes"
+    Public Structure Block
+        Public X As Integer
+        Public Y As Integer
+    End Structure
     Class Tetromino
         Private xPosition, yPosition, boardWidth, boardHeight As Integer
-        Private shapeType As TetromintoType
+        Private shapeType As TetrominoType
         Private previousXPosition, previousYPosition As Integer
 
         Private isActive As Boolean
         ' Private shape  i'll do this later since its gonna be awkward.
-        Sub New(shapeType As TetromintoType)
+        Sub New(shapeType As TetrominoType)
 
             xPosition = 5
             yPosition = 0
             isActive = True
             Me.shapeType = shapeType
         End Sub
-        Public Function getTileColour() As Color
-            Return Form1.getTetrominoColour(shapeType)
+        Public Function GetTileColour() As Color
+            Return Form1.GetTetrominoColour(shapeType)
         End Function
-        Private Sub updatePreviousPosition()
+        Private Sub UpdatePreviousPosition()
             previousXPosition = xPosition
             previousYPosition = yPosition
         End Sub
-        Public Sub movePiece(direction As DirectionType)
+        Public Sub MovePiece(direction As DirectionType)
             If direction = DirectionType.Left Then
-                moveLeft()
+                MoveLeft()
             ElseIf direction = DirectionType.Right Then
-                moveRight()
+                MoveRight()
             End If
         End Sub
 
-        Private Sub moveLeft()
+        Private Sub MoveLeft()
             xPosition -= 1
             Debug.WriteLine("Left")
         End Sub
-        Private Sub moveRight()
+        Private Sub MoveRight()
             xPosition += 1
             Debug.WriteLine("Right")
         End Sub
-        Public Function getShapeType() As TetromintoType
+        Public Function GetShapeType() As TetrominoType
             Return shapeType
         End Function
-        Public Function getPreviousXPosition() As Integer
+        Public Function GetPreviousXPosition() As Integer
             Return previousXPosition
         End Function
-        Public Function getPreviousYPosition() As Integer
+        Public Function GetPreviousYPosition() As Integer
             Return previousYPosition
         End Function
-        Public Function getXPosition() As Integer
+        Public Function GetXPosition() As Integer
             Return xPosition
         End Function
-        Public Function getYPosition() As Integer
+        Public Function GetYPosition() As Integer
             Return yPosition
         End Function
 
-        Public Sub update()
+        Public Sub Update()
 
-            updatePreviousPosition()
+            UpdatePreviousPosition()
             yPosition += 1
         End Sub
     End Class
-
+    Class Queue(Of T)
+        Private itemsList As New List(Of T)
+        Public Function IsEmpty()
+            If itemsList.Count = 0 Then
+                Return True
+            End If
+            Return False
+        End Function
+        Public Sub Enqueue(item As T)
+            itemsList.Add(item)
+        End Sub
+        Public Function Dequeue() As T
+            If IsEmpty() Then
+                Throw New InvalidOperationException("Queue is empty")
+            End If
+            Dim queuedValue As T = itemsList(0)
+            itemsList.RemoveAt(0)
+            Return queuedValue
+        End Function
+        Public Sub Randomise()
+            For i = 0 To itemsList.Count - 2
+                Dim j = rand.Next(i, itemsList.Count)
+                Dim temp As T = itemsList(i)
+                itemsList(i) = itemsList(j)
+                itemsList(j) = temp
+            Next
+        End Sub
+    End Class
 #End Region
 
 
