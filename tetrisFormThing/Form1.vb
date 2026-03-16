@@ -17,7 +17,7 @@ Public Class Form1
     Public Shared DisplaySize As Size = New Size(800, 800)
     Public FrameInterval As Integer = 16 ' Time in milliseconds between each frame render. 16 milliseconds is approximately 60 FPS (Frames Per Second)
     Public KeyRepeatInterval As Integer = 10 ' If a key is held down, this is the number of frames between each repeat. Set as 0 for no delay
-
+    Dim softDropInterval As Integer = 5
 
 #Region "Framework Variables"
     ' Framework Variables
@@ -49,9 +49,12 @@ Public Class Form1
 
     Dim borderColor As Color = Color.RebeccaPurple
 
+    Dim softDropDebounce = False
     Dim currentTetromino As Tetromino
     Dim tetrominoBag As New Queue(Of TetrominoType)
     Dim tetrominoDelayCounter As Integer = 0
+    Dim tetrominoCounterIncrement As Integer = 1
+    Dim softDropCounter As Integer = 0
     Dim tetrominoUpdateInterval As Integer = 30 ' In miliseconds
     Enum TetrominoType
         None
@@ -123,7 +126,8 @@ Public Class Form1
 
         tetrominoDelayCounter += 1
 
-        If tetrominoDelayCounter >= tetrominoUpdateInterval Then
+        If tetrominoDelayCounter >= tetrominoUpdateInterval Or softDropDebounce Then
+            softDropDebounce = False
             Debug.WriteLine("Y : " & currentTetromino.GetYPosition)
             Debug.WriteLine(ShouldBeLocked)
             If ShouldBeLocked() Then
@@ -149,6 +153,18 @@ Public Class Form1
 
 
         ' Up
+
+        If softDropCounter >= softDropInterval Then
+            If KeyPressed.ContainsKey(32) Then
+                If KeyPressed(32) Then
+                    softDropDebounce = True
+                    softDropCounter = 0
+                End If
+            End If
+        Else
+            softDropCounter += 1
+        End If
+
         If KeyDelayCounter = KeyRepeatInterval Then
 
 
@@ -211,6 +227,7 @@ Public Class Form1
             End If
 
         Else
+
             KeyDelayCounter = KeyDelayCounter + 1
         End If
 #End Region
@@ -318,6 +335,8 @@ Public Class Form1
         End If
         Return False
     End Function
+
+
 
     Sub LockPiece()
         board(currentTetromino.GetXPosition, currentTetromino.GetYPosition) = currentTetromino.GetShapeType
