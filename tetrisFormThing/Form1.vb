@@ -309,7 +309,7 @@ Public Class Form1
         Dim currentTileXPosition = gridOffsetStartX + (currentTetromino.GetXPosition * tileSize)
         Dim currentTileYPosition = gridOffsetStartY + (currentTetromino.GetYPosition * tileSize)
         g.FillRectangle(New SolidBrush(currentTetromino.GetTileColour), currentTileXPosition, currentTileYPosition, tileSize, tileSize)
-
+        g.DrawRectangle(New Pen(Color.Black), currentTileXPosition, currentTileYPosition, tileSize, tileSize)
 
     End Sub
     Sub DrawLockedPieces(g As Graphics)
@@ -320,6 +320,7 @@ Public Class Form1
                 g.DrawRectangle(Pens.Gray, currentTileXPosition, currentTileYPosition, tileSize, tileSize)
                 If board(rows, columns) <> TetrominoType.None Then
                     g.FillRectangle(New SolidBrush(GetTetrominoColour(board(rows, columns))), currentTileXPosition, currentTileYPosition, tileSize, tileSize)
+                    g.DrawRectangle(New Pen(Color.Black), currentTileXPosition, currentTileYPosition, tileSize, tileSize)
                 End If
             Next
         Next
@@ -335,8 +336,6 @@ Public Class Form1
         End If
         Return False
     End Function
-
-
 
     Sub LockPiece()
         board(currentTetromino.GetXPosition, currentTetromino.GetYPosition) = currentTetromino.GetShapeType
@@ -416,12 +415,18 @@ Public Class Form1
     Public Structure Block
         Public X As Integer
         Public Y As Integer
+
+        Public Sub New(X As Integer, Y As Integer)
+            Me.X = X
+            Me.Y = Y
+        End Sub
     End Structure
     Class Tetromino
-        Private xPosition, yPosition, boardWidth, boardHeight As Integer
+        Private xPosition, yPosition As Integer
         Private shapeType As TetrominoType
         Private previousXPosition, previousYPosition As Integer
-
+        Private blockRelativePositions() As Block
+        Private centreOfRotation As Block
         Private isActive As Boolean
         ' Private shape  i'll do this later since its gonna be awkward.
         Sub New(shapeType As TetrominoType)
@@ -430,6 +435,35 @@ Public Class Form1
             yPosition = 0
             isActive = True
             Me.shapeType = shapeType
+
+            selectPieceType()
+        End Sub
+
+        Sub selectPieceType()
+
+            Select Case shapeType
+                Case TetrominoType.I_Piece
+                    blockRelativePositions = {New Block(-1, 0), New Block(0, 0), New Block(1, 0), New Block(2, 0)}
+                    centreOfRotation = New Block(0, 0)
+                Case TetrominoType.O_Piece
+                    blockRelativePositions = {New Block(0, 0), New Block(1, 0), New Block(0, 1), New Block(1, 1)}
+                    centreOfRotation = New Block(0, 0)
+                Case TetrominoType.T_Piece
+                    blockRelativePositions = {New Block(-1, 0), New Block(0, 0), New Block(1, 0), New Block(0, 1)}
+                    centreOfRotation = New Block(0, 0)
+                Case TetrominoType.S_Piece
+                    blockRelativePositions = {New Block(0, 0), New Block(1, 0), New Block(-1, 1), New Block(0, 1)}
+                    centreOfRotation = New Block(0, 1)
+                Case TetrominoType.Z_Piece
+                    blockRelativePositions = {New Block(-1, 0), New Block(0, 0), New Block(0, 1), New Block(1, 1)}
+                    centreOfRotation = New Block(0, 1)
+                Case TetrominoType.J_Piece
+                    blockRelativePositions = {New Block(-1, 0), New Block(0, 0), New Block(1, 0), New Block(-1, 1)}
+                    centreOfRotation = New Block(0, 0)
+                Case TetrominoType.L_Piece
+                    blockRelativePositions = {New Block(-1, 0), New Block(0, 0), New Block(1, 0), New Block(1, 1)}
+                    centreOfRotation = New Block(0, 0)
+            End Select
         End Sub
         Public Function GetTileColour() As Color
             Return Form1.GetTetrominoColour(shapeType)
