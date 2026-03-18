@@ -129,7 +129,7 @@ Public Class Form1
         If tetrominoDelayCounter >= tetrominoUpdateInterval Or softDropDebounce Then
             softDropDebounce = False
             Debug.WriteLine("Y : " & currentTetromino.GetYPosition)
-            Debug.WriteLine(ShouldBeLocked)
+            Debug.WriteLine("Should be locked : " & ShouldBeLocked())
             If ShouldBeLocked() Then
                 LockPiece()
             End If
@@ -306,10 +306,13 @@ Public Class Form1
     End Sub
     Sub DrawCurrentPiece(g As Graphics)
 
-        Dim currentTileXPosition = gridOffsetStartX + (currentTetromino.GetXPosition * tileSize)
-        Dim currentTileYPosition = gridOffsetStartY + (currentTetromino.GetYPosition * tileSize)
-        g.FillRectangle(New SolidBrush(currentTetromino.GetTileColour), currentTileXPosition, currentTileYPosition, tileSize, tileSize)
-        g.DrawRectangle(New Pen(Color.Black), currentTileXPosition, currentTileYPosition, tileSize, tileSize)
+        For Each relativePosition In currentTetromino.getBlockRelativePositions
+            Dim currentTileXPosition = gridOffsetStartX + ((currentTetromino.GetXPosition + relativePosition.X) * tileSize)
+            Dim currentTileYPosition = gridOffsetStartY + ((currentTetromino.GetYPosition + relativePosition.Y) * tileSize)
+            g.FillRectangle(New SolidBrush(currentTetromino.GetTileColour), currentTileXPosition, currentTileYPosition, tileSize, tileSize)
+            g.DrawRectangle(New Pen(Color.Black), currentTileXPosition, currentTileYPosition, tileSize, tileSize)
+        Next
+
 
     End Sub
     Sub DrawLockedPieces(g As Graphics)
@@ -326,19 +329,31 @@ Public Class Form1
         Next
     End Sub
     Function ShouldBeLocked()
-        If currentTetromino.GetYPosition < gridHeight Then
-            If board(currentTetromino.GetXPosition, currentTetromino.GetYPosition + 1) <> TetrominoType.None Then
+
+
+        For Each relativePosition In currentTetromino.getBlockRelativePositions
+            Dim brickXPosition = currentTetromino.GetXPosition + relativePosition.X
+            Dim brickYPosition = currentTetromino.GetYPosition + relativePosition.Y
+            If brickYPosition < gridHeight Then
+                If board(brickXPosition, brickYPosition + 1) <> TetrominoType.None Then
+                    Return True
+                End If
+            End If
+            If brickYPosition >= (gridHeight) Then
                 Return True
             End If
-        End If
-        If currentTetromino.GetYPosition >= (gridHeight) Then
-            Return True
-        End If
+        Next
         Return False
     End Function
 
     Sub LockPiece()
-        board(currentTetromino.GetXPosition, currentTetromino.GetYPosition) = currentTetromino.GetShapeType
+        For Each relativePosition In currentTetromino.getBlockRelativePositions
+            Dim brickXPosition = currentTetromino.GetXPosition + relativePosition.X
+            Dim brickYPosition = currentTetromino.GetYPosition + relativePosition.Y
+
+            board(brickXPosition, brickYPosition) = currentTetromino.GetShapeType
+        Next
+
         If tetrominoBag.IsEmpty Then
             RefillBag()
         End If
@@ -377,14 +392,36 @@ Public Class Form1
         End Select
     End Function
     Sub AttemptMoveLeft()
-        If TryTransformation(currentTetromino.GetXPosition - 1, currentTetromino.GetYPosition) Then
+        Dim canMoveLeft As Boolean = True
+        For Each relativePosition In currentTetromino.getBlockRelativePositions
+            Dim brickXPosition = currentTetromino.GetXPosition + relativePosition.X
+            Dim brickYPosition = currentTetromino.GetYPosition + relativePosition.Y
+
+            If Not TryTransformation(brickXPosition - 1, brickYPosition) Then
+                canMoveLeft = False
+
+            End If
+        Next
+        If canMoveLeft Then
             currentTetromino.MovePiece(DirectionType.Left)
         End If
+
     End Sub
     Sub AttemptMoveRight()
-        If TryTransformation(currentTetromino.GetXPosition + 1, currentTetromino.GetYPosition) Then
+        Dim canMoveRight As Boolean = True
+        For Each relativePosition In currentTetromino.getBlockRelativePositions
+            Dim brickXPosition = currentTetromino.GetXPosition + relativePosition.X
+            Dim brickYPosition = currentTetromino.GetYPosition + relativePosition.Y
+
+            If Not TryTransformation(brickXPosition + 1, brickYPosition) Then
+                canMoveRight = False
+
+            End If
+        Next
+        If canMoveRight Then
             currentTetromino.MovePiece(DirectionType.Right)
         End If
+
     End Sub
     Function TryTransformation(newX As Integer, newY As Integer) As Boolean
         Dim xPosCondition As Boolean = (newX >= 0 And newX <= gridWidth)
@@ -427,18 +464,22 @@ Public Class Form1
         Private previousXPosition, previousYPosition As Integer
         Private blockRelativePositions() As Block
         Private centreOfRotation As Block
-        Private isActive As Boolean
+
         ' Private shape  i'll do this later since its gonna be awkward.
         Sub New(shapeType As TetrominoType)
 
             xPosition = 5
             yPosition = 0
-            isActive = True
             Me.shapeType = shapeType
 
             selectPieceType()
         End Sub
-
+        Function getBlockRelativePositions()
+            Return blockRelativePositions
+        End Function
+        Function getCentreOfRotation()
+            Return centreOfRotation
+        End Function
         Sub selectPieceType()
 
             Select Case shapeType
