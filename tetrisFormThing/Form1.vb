@@ -167,9 +167,19 @@ Public Class Form1
 
         If KeyDelayCounter = KeyRepeatInterval Then
 
+            If KeyPressed.ContainsKey(81) Then
+                If KeyPressed(81) Then
+                    attemptLeftRotation()
+                    KeyDelayCounter = 0
+                End If
+            End If
 
-
-
+            If KeyPressed.ContainsKey(82) Then
+                If KeyPressed(82) Then
+                    attemptRightRotation()
+                    KeyDelayCounter = 0
+                End If
+            End If
             If KeyPressed.ContainsKey(37) Then
                 If KeyPressed(37) Then
                     ' *********************************************************
@@ -423,18 +433,47 @@ Public Class Form1
         End If
 
     End Sub
+
+    Sub attemptRightRotation()
+        Dim canRotateRight As Boolean = True
+
+        For Each relativePosition In currentTetromino.getPotentialRotation(DirectionType.Right)
+            Dim brickXPosition = currentTetromino.GetXPosition + relativePosition.X
+            Dim brickYPosition = currentTetromino.GetYPosition + relativePosition.Y
+
+            If Not TryTransformation(brickXPosition + 1, brickYPosition) Then
+                canRotateRight = False
+            End If
+        Next
+        If canRotateRight Then
+            currentTetromino.Rotate(DirectionType.Right)
+        End If
+    End Sub
+
+    Sub attemptLeftRotation()
+        Dim canRotateRight As Boolean = True
+
+        For Each relativePosition In currentTetromino.getPotentialRotation(DirectionType.Left)
+            Dim brickXPosition = currentTetromino.GetXPosition + relativePosition.X
+            Dim brickYPosition = currentTetromino.GetYPosition + relativePosition.Y
+
+            If Not TryTransformation(brickXPosition + 1, brickYPosition) Then
+                canRotateRight = False
+
+            End If
+        Next
+        If canRotateRight Then
+            currentTetromino.Rotate(DirectionType.Left)
+        End If
+    End Sub
     Function TryTransformation(newX As Integer, newY As Integer) As Boolean
         Dim xPosCondition As Boolean = (newX >= 0 And newX <= gridWidth)
         Dim yPosCondition As Boolean = (newY >= 0 And newY <= gridHeight)
 
 
-        Debug.WriteLine("X Pos : " & xPosCondition)
-        Debug.WriteLine("Y Pos : " & yPosCondition)
-
 
         If xPosCondition And yPosCondition Then
             Dim isSpotClear As Boolean = (board(newX, newY) = TetrominoType.None)
-            Debug.WriteLine("Is Spot Clear : " & isSpotClear)
             If isSpotClear Then
                 Return True
             End If
@@ -473,6 +512,51 @@ Public Class Form1
             Me.shapeType = shapeType
 
             selectPieceType()
+        End Sub
+        Function getPotentialRotation(direction As DirectionType)
+            Dim rotationRelativePosition(blockRelativePositions.Length) As Block
+            Dim rightMultiplier As Integer = 1
+            Dim leftMultiplier As Integer = 1
+
+            If direction = DirectionType.Right Then
+                rightMultiplier *= -1
+            Else
+                leftMultiplier *= -1
+            End If
+
+            For i As Integer = 0 To blockRelativePositions.Length - 1
+                Dim currentblock = blockRelativePositions(i)
+                Dim relativeX = currentblock.X - centreOfRotation.X
+                Dim relativeY = currentblock.Y - centreOfRotation.Y
+
+                Dim newX = relativeY * rightMultiplier
+                Dim newY = relativeX * leftMultiplier
+
+                rotationRelativePosition(i).X = newX + centreOfRotation.X
+                rotationRelativePosition(i).Y = newY + centreOfRotation.Y
+            Next
+
+            Return rotationRelativePosition
+        End Function
+        Sub Rotate(direction As DirectionType)
+            Dim rightMultiplier As Integer = 1
+            Dim leftMultiplier As Integer = 1
+            If direction = DirectionType.Right Then
+                rightMultiplier *= -1
+            Else
+                leftMultiplier *= -1
+            End If
+            For i As Integer = 0 To blockRelativePositions.Length - 1
+                Dim currentblock = blockRelativePositions(i)
+                Dim relativeX = currentblock.X - centreOfRotation.X
+                Dim relativeY = currentblock.Y - centreOfRotation.Y
+
+                Dim newX = relativeY * rightMultiplier
+                Dim newY = relativeX * leftMultiplier
+
+                blockRelativePositions(i).X = newX + centreOfRotation.X
+                blockRelativePositions(i).Y = newY + centreOfRotation.Y
+            Next
         End Sub
         Function getBlockRelativePositions()
             Return blockRelativePositions
