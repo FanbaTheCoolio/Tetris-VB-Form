@@ -38,9 +38,13 @@ Public Class Form1
     ' ** Define your application variables below **
     ' *********************************************
 
+
+    ' ** UI OFFSETS AND SIZING **
+
     Dim gridOffsetStartX As Integer '= ClientSize.Width * 0.85
     Dim gridOffsetStartY As Integer = 0
-
+    Dim scoreOffsetX As Integer = 25
+    Dim scoreOffsetY As Integer = 100
     Dim tileSize As Integer = 40
     Dim gridHeight As Integer = 18
     Dim gridWidth As Integer = 8
@@ -56,6 +60,7 @@ Public Class Form1
     Dim tetrominoCounterIncrement As Integer = 1
     Dim softDropCounter As Integer = 0
     Dim tetrominoUpdateInterval As Integer = 30 ' In miliseconds
+    Dim currentGameState As GameState
     Enum TetrominoType
         None
         I_Piece
@@ -65,6 +70,12 @@ Public Class Form1
         J_Piece
         S_Piece
         Z_Piece
+    End Enum
+    Enum GameState
+        StartMenu
+        Ingame
+        Pause
+        GameOver
     End Enum
     Enum DirectionType
         Left
@@ -299,10 +310,10 @@ Public Class Form1
         Next
     End Sub
 
-    Sub drawScore(g As Graphics)
+    Sub DrawScore(g As Graphics)
         Dim scoreString As String = "Score : " & gameScore
-        Dim scoreFont As Font = New Font()
-        g.DrawString(scoreString,  , New SolidBrush(Color.Black), )
+        Dim scoreFont As Font = New Font("Consolas", 20, FontStyle.Bold)
+        g.DrawString(scoreString, scoreFont, New SolidBrush(Color.Black), scoreOffsetX, scoreOffsetY)
     End Sub
     Sub DrawTetris(g As Graphics)
         g.Clear(Color.Black)
@@ -387,8 +398,10 @@ Public Class Form1
             If isLineClear Then
                 Debug.WriteLine(y)
                 'positionOfLinesToBeCleared.Add(y)
+                gameScore += 50
                 For lineClearingX As Integer = 0 To gridWidth
                     board(lineClearingX, y) = TetrominoType.None
+
                 Next
                 For gravityY As Integer = (y - 1) To 0 Step -1
                     For gravityX As Integer = 0 To gridWidth
@@ -470,7 +483,7 @@ Public Class Form1
             Dim brickXPosition = currentTetromino.GetXPosition + relativePosition.X
             Dim brickYPosition = currentTetromino.GetYPosition + relativePosition.Y
 
-            If Not TryTransformation(brickXPosition + 1, brickYPosition) Then
+            If Not TryTransformation(brickXPosition, brickYPosition) Then
                 canRotateRight = False
             End If
         Next
@@ -486,7 +499,7 @@ Public Class Form1
             Dim brickXPosition = currentTetromino.GetXPosition + relativePosition.X
             Dim brickYPosition = currentTetromino.GetYPosition + relativePosition.Y
 
-            If Not TryTransformation(brickXPosition + 1, brickYPosition) Then
+            If Not TryTransformation(brickXPosition, brickYPosition) Then
                 canRotateRight = False
 
             End If
