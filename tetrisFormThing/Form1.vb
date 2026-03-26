@@ -48,7 +48,7 @@ Public Class Form1
     Dim board(gridWidth, gridHeight) As TetrominoType
 
     Dim borderColor As Color = Color.RebeccaPurple
-
+    Dim gameScore As Integer = 0
     Dim softDropDebounce = False
     Dim currentTetromino As Tetromino
     Dim tetrominoBag As New Queue(Of TetrominoType)
@@ -90,28 +90,9 @@ Public Class Form1
         ' **********************************************************************
         ' ** The code below will run once when the application loads / starts **
         ' **********************************************************************
-        Randomize()
 
-        RefillBag()
-        currentTetromino = New Tetromino(tetrominoBag.Dequeue)
+        InitialiseGame()
 
-        gridOffsetStartX = (ClientSize.Width - (tileSize * gridWidth) - tileSize) / 2
-
-
-        For y As Integer = 0 To gridHeight
-            For x As Integer = 0 To gridWidth
-                board(x, y) = TetrominoType.None
-            Next
-        Next
-
-
-        'board(4, 5) = TetrominoType.S_Piece
-        'board(7, 16) = TetrominoType.O_Piece
-        'board(6, 8) = TetrominoType.T_Piece
-        'board(2, 5) = TetrominoType.Z_Piece
-        'board(5, 6) = TetrominoType.O_Piece
-        'board(7, 3) = TetrominoType.L_Piece
-        'board(3, 4) = TetrominoType.J_Piece
         ' **********************************************************************
         ' ** The code above will run once when the application loads / starts **
         ' **********************************************************************
@@ -122,14 +103,12 @@ Public Class Form1
 #Region "Game State Update"
     ' All game Updates should be put here e.g. reading keyboard/ mouse, updating sprite positions (but NOT drawing them), calculations etc.
     Private Sub GameUpdate()
-        'TODO : ADD THE RANDOM BAG SYSTEM FOR TETROMINOS LATER
 
         tetrominoDelayCounter += 1
 
         If tetrominoDelayCounter >= tetrominoUpdateInterval Or softDropDebounce Then
             softDropDebounce = False
-            Debug.WriteLine("Y : " & currentTetromino.GetYPosition)
-            Debug.WriteLine("Should be locked : " & ShouldBeLocked())
+
             If ShouldBeLocked() Then
                 LockPiece()
             End If
@@ -304,11 +283,33 @@ Public Class Form1
     ' ****************************************************************
     ' ** Put the subs and functions for your application below here **
     ' ****************************************************************
+    Sub InitialiseGame()
+        Randomize()
+
+        RefillBag()
+        currentTetromino = New Tetromino(tetrominoBag.Dequeue)
+
+        gridOffsetStartX = (ClientSize.Width - (tileSize * gridWidth) - tileSize) / 2
+
+
+        For y As Integer = 0 To gridHeight
+            For x As Integer = 0 To gridWidth
+                board(x, y) = TetrominoType.None
+            Next
+        Next
+    End Sub
+
+    Sub drawScore(g As Graphics)
+        Dim scoreString As String = "Score : " & gameScore
+        Dim scoreFont As Font = New Font()
+        g.DrawString(scoreString,  , New SolidBrush(Color.Black), )
+    End Sub
     Sub DrawTetris(g As Graphics)
         g.Clear(Color.Black)
         DrawBorders(g)
         DrawLockedPieces(g)
         DrawCurrentPiece(g)
+        drawScore(g)
     End Sub
     Sub DrawBorders(g As Graphics)
         g.FillRectangle(New SolidBrush(borderColor), 0, 0, gridOffsetStartX, ClientSize.Height)
@@ -363,14 +364,42 @@ Public Class Form1
 
             board(brickXPosition, brickYPosition) = currentTetromino.GetShapeType
         Next
+        ClearLines()
 
         If tetrominoBag.IsEmpty Then
             RefillBag()
         End If
         currentTetromino = New Tetromino(tetrominoBag.Dequeue)
 
-    End Sub
 
+    End Sub
+    Sub ClearLines()
+        'Dim positionOfLinesToBeCleared As New List(Of Integer)
+
+
+        For y As Integer = 0 To gridHeight
+            Dim isLineClear As Boolean = True
+            For x As Integer = 0 To gridWidth
+                If board(x, y) = TetrominoType.None Then
+                    isLineClear = False
+                End If
+            Next
+            If isLineClear Then
+                Debug.WriteLine(y)
+                'positionOfLinesToBeCleared.Add(y)
+                For lineClearingX As Integer = 0 To gridWidth
+                    board(lineClearingX, y) = TetrominoType.None
+                Next
+                For gravityY As Integer = (y - 1) To 0 Step -1
+                    For gravityX As Integer = 0 To gridWidth
+                        board(gravityX, gravityY + 1) = board(gravityX, gravityY)
+
+                    Next
+                Next
+
+            End If
+        Next
+    End Sub
     Sub RefillBag()
         For Each piece As TetrominoType In [Enum].GetValues(GetType(TetrominoType))
             If piece <> TetrominoType.None Then
@@ -607,11 +636,9 @@ Public Class Form1
 
         Private Sub MoveLeft()
             xPosition -= 1
-            Debug.WriteLine("Left")
         End Sub
         Private Sub MoveRight()
             xPosition += 1
-            Debug.WriteLine("Right")
         End Sub
         Public Function GetShapeType() As TetrominoType
             Return shapeType
@@ -635,6 +662,8 @@ Public Class Form1
             yPosition += 1
         End Sub
     End Class
+
+    ' needs to be cyclic cause its a fixed amount.
     Class Queue(Of T)
         Private itemsList As New List(Of T)
         Public Function IsEmpty()
