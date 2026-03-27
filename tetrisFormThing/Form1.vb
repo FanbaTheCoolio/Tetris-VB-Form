@@ -309,6 +309,18 @@ Public Class Form1
             Next
         Next
     End Sub
+    Sub ChangeGameState(newGameState As GameState)
+        Select Case newGameState
+            Case GameState.StartMenu
+
+            Case GameState.Ingame
+
+            Case GameState.GameOver
+
+            Case GameState.Pause
+
+        End Select
+    End Sub
 
     Sub DrawScore(g As Graphics)
         Dim scoreString As String = "Score : " & gameScore
@@ -393,6 +405,7 @@ Public Class Form1
             For x As Integer = 0 To gridWidth
                 If board(x, y) = TetrominoType.None Then
                     isLineClear = False
+                    Exit For
                 End If
             Next
             If isLineClear Then
@@ -476,7 +489,7 @@ Public Class Form1
 
     End Sub
 
-    Sub attemptRightRotation()
+    Sub AttemptRightRotation()
         Dim canRotateRight As Boolean = True
 
         For Each relativePosition In currentTetromino.getPotentialRotation(DirectionType.Right)
@@ -492,7 +505,7 @@ Public Class Form1
         End If
     End Sub
 
-    Sub attemptLeftRotation()
+    Sub AttemptLeftRotation()
         Dim canRotateRight As Boolean = True
 
         For Each relativePosition In currentTetromino.getPotentialRotation(DirectionType.Left)
