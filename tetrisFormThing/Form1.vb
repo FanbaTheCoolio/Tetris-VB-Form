@@ -4,6 +4,7 @@
 ' Create a new VB.Net Forms application. Paste all of this code into Form1's code view.
 
 
+Imports System.DirectoryServices.ActiveDirectory
 Imports System.Drawing.Drawing2D
 Imports System.Drawing.Text
 Imports System.Numerics
@@ -41,6 +42,13 @@ Public Class Form1
 
 
     Dim currentSceneManager As SceneManager
+    Enum PlayerAction
+        LeftRotation
+        RightRotation
+        LeftMovement
+        RightMovement
+        SoftDrop
+    End Enum
     Enum TetrominoType
         None
         I_Piece
@@ -109,7 +117,7 @@ Public Class Form1
         If currentSceneManager.IsSoftDropReady Then
             If KeyPressed.ContainsKey(32) Then
                 If KeyPressed(32) Then
-                    currentSceneManager.SoftDrop()
+                    currentSceneManager.HandleAction(PlayerAction.SoftDrop)
                 End If
             End If
         Else
@@ -120,14 +128,14 @@ Public Class Form1
 
             If KeyPressed.ContainsKey(81) Then
                 If KeyPressed(81) Then
-                    currentSceneManager.AttemptLeftRotation()
+                    currentSceneManager.HandleAction(PlayerAction.LeftRotation)
                     KeyDelayCounter = 0
                 End If
             End If
 
             If KeyPressed.ContainsKey(82) Then
                 If KeyPressed(82) Then
-                    currentSceneManager.AttemptRightRotation()
+                    currentSceneManager.HandleAction(PlayerAction.RightRotation)
                     KeyDelayCounter = 0
                 End If
             End If
@@ -137,7 +145,7 @@ Public Class Form1
                     ' ** The code below runs when the LEFT (37) key is pressed **
                     ' *********************************************************
 
-                    currentSceneManager.AttemptMoveLeft()
+                    currentSceneManager.HandleAction(PlayerAction.LeftMovement)
 
                     ' *********************************************************
                     ' ** The code above runs when the LEFT (37) key is pressed **
@@ -152,7 +160,7 @@ Public Class Form1
                     ' ** The code below runs when the A (65) key is pressed **
                     ' *********************************************************
 
-                    currentSceneManager.AttemptMoveLeft()
+                    currentSceneManager.HandleAction(PlayerAction.LeftMovement)
 
                     ' *********************************************************
                     ' ** The code above runs when the A (65) key is pressed **
@@ -165,7 +173,7 @@ Public Class Form1
                     ' *********************************************************
                     ' ** The code below runs when the RIGHT (39) key is pressed **
                     ' *********************************************************
-                    currentSceneManager.AttemptMoveRight()
+                    currentSceneManager.HandleAction(PlayerAction.RightMovement)
                     ' *********************************************************
                     ' ** The code above runs when the RIGHT (39) key is pressed **
                     ' *********************************************************
@@ -179,7 +187,7 @@ Public Class Form1
                     ' *********************************************************
                     ' ** The code below runs when the D (68) key is pressed **
                     ' *********************************************************
-                    currentSceneManager.AttemptMoveRight()
+                    currentSceneManager.HandleAction(PlayerAction.RightMovement)
                     ' *********************************************************
                     ' ** The code above runs when the D (68) key is pressed **
                     ' *********************************************************
@@ -311,7 +319,7 @@ Public Class Form1
         Public Sub IncrementSoftDropCounter()
             softDropCounter += 1
         End Sub
-        Public Sub SoftDrop()
+        Private Sub SoftDrop()
             softDropDebounce = True
             softDropCounter = 0
         End Sub
@@ -349,7 +357,7 @@ Public Class Form1
             Select Case currentGameState
                 Case GameState.StartMenu
                     For Each button In startStateButtons
-                        button.HandeClick(mouseX, mouseY)
+                        button.HandleClick(mouseX, mouseY)
                     Next
             End Select
         End Sub
@@ -539,7 +547,28 @@ Public Class Form1
                     Return Color.Black
             End Select
         End Function
-        Public Sub AttemptMoveLeft()
+
+        Public Sub HandleAction(action As PlayerAction)
+
+
+            If currentGameState <> GameState.Ingame Then Return
+
+            Select Case action
+                Case PlayerAction.LeftMovement
+                    AttemptLeftMovement()
+                Case PlayerAction.RightMovement
+                    AttemptRightMovement()
+                Case PlayerAction.LeftRotation
+                    AttemptLeftRotation()
+                Case PlayerAction.RightRotation
+                    AttemptRightRotation()
+                Case PlayerAction.SoftDrop
+                    SoftDrop()
+                Case Else
+                    Throw New ArgumentOutOfRangeException(NameOf(action))
+            End Select
+        End Sub
+        Private Sub AttemptLeftMovement()
             Dim canMoveLeft As Boolean = True
             For Each relativePosition In currentTetromino.getBlockRelativePositions
                 Dim brickXPosition = currentTetromino.GetXPosition + relativePosition.X
@@ -555,7 +584,7 @@ Public Class Form1
             End If
 
         End Sub
-        Public Sub AttemptMoveRight()
+        Private Sub AttemptRightMovement()
             Dim canMoveRight As Boolean = True
             For Each relativePosition In currentTetromino.getBlockRelativePositions
                 Dim brickXPosition = currentTetromino.GetXPosition + relativePosition.X
@@ -572,7 +601,9 @@ Public Class Form1
 
         End Sub
 
-        Public Sub AttemptRightRotation()
+        Private Sub AttemptRightRotation()
+            If currentTetromino.GetShapeType = TetrominoType.O_Piece Then Return
+
             Dim canRotateRight As Boolean = True
 
             For Each relativePosition In currentTetromino.getPotentialRotation(DirectionType.Right)
@@ -588,7 +619,9 @@ Public Class Form1
             End If
         End Sub
 
-        Public Sub AttemptLeftRotation()
+        Private Sub AttemptLeftRotation()
+            If currentTetromino.GetShapeType = TetrominoType.O_Piece Then Return
+
             Dim canRotateRight As Boolean = True
 
             For Each relativePosition In currentTetromino.getPotentialRotation(DirectionType.Left)
@@ -798,12 +831,13 @@ Public Class Form1
 
             g.FillRectangle(New SolidBrush(colour), bounds)
 
-            Dim textXPosition As Integer = bounds.X + (bounds.Width * 0.35)
-            Dim textYPosition As Integer = bounds.Y + (bounds.Height * 0.1)
-            g.DrawString(text, font, New SolidBrush(Color.Yellow), textXPosition, textYPosition)
+            Dim textSize As SizeF = g.MeasureString(text, font)
+            Dim textXPosition As Single = bounds.X + (bounds.Width - textSize.Width) / 2
+            Dim textYPosition As Single = bounds.Y + (bounds.Height - textSize.Height) / 2
+            g.DrawString(text, font, New SolidBrush(textColour), textXPosition, textYPosition)
         End Sub
 
-        Public Sub HandeClick(mouseX As Integer, mouseY As Integer)
+        Public Sub HandleClick(mouseX As Integer, mouseY As Integer)
             If bounds.Contains(mouseX, mouseY) Then
                 action.Invoke()
             End If
