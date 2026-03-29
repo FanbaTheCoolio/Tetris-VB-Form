@@ -48,6 +48,7 @@ Public Class Form1
         LeftMovement
         RightMovement
         SoftDrop
+        Pause
     End Enum
     Enum TetrominoType
         None
@@ -275,10 +276,6 @@ Public Class Form1
 
 #Region "User Defined Classes"
     Class SceneManager
-
-
-
-
         Private board(gridWidth, gridHeight) As TetrominoType
 
         Private gameScore As Integer = 0
@@ -291,6 +288,9 @@ Public Class Form1
         Private borderColor As Color = Color.RebeccaPurple
         Private softDropCounter As Integer = 0
         Private startStateButtons As New List(Of Button)
+        Private ingameStatebuttons As New List(Of Button)
+        Private pauseStateButtons As New List(Of Button)
+
 
         Private gridOffsetStartX As Integer '= ClientSize.Width * 0.85
         Private Const gridOffsetStartY As Integer = 0
@@ -308,7 +308,24 @@ Public Class Form1
             Me.screenHeight = screenHeight
             gridOffsetStartX = (screenWidth - (tileSize * gridWidth) - tileSize) / 2
 
-            startStateButtons.Add(New Button(300, 300, 200, 60, "Start", Color.Black, Color.Blue, Color.DarkBlue, Sub() ChangeGameState(GameState.Ingame)))
+
+            Dim startButtonWidth As Integer = 200
+            Dim startButtonHeight As Integer = 60
+
+            Dim startButtonCentreX As Integer = (screenWidth - startButtonWidth) \ 2
+            Dim startButtonCentreY As Integer = (screenHeight - startButtonHeight) \ 2
+
+            startStateButtons.Add(New Button(startButtonCentreX, startButtonCentreY, startButtonWidth, startButtonHeight, "Start", Color.Black, Color.Blue, Color.DarkBlue, Sub() ChangeGameState(GameState.Ingame)))
+
+            Dim pauseButtonWidth As Integer = 75
+            Dim pauseButtonHeight As Integer = 75
+
+            Dim pauseButtonCentreX As Integer = (screenWidth - startButtonWidth) \ 20
+            Dim pauseButtonCentreY As Integer = (screenHeight - startButtonHeight) \ 40
+
+            ingameStatebuttons.Add(New Button(pauseButtonCentreX, pauseButtonCentreY, pauseButtonWidth, pauseButtonHeight, My.Resources.Resource1.PauseImage, Color.DarkBlue, Color.Yellow, Sub() ChangeGameState(GameState.Pause)))
+            pauseStateButtons.Add(New Button(pauseButtonCentreX, pauseButtonCentreY, pauseButtonWidth, pauseButtonHeight, My.Resources.Resource1.PauseImage, Color.DarkBlue, Color.Yellow, Sub() ChangeGameState(GameState.Pause)))
+
 
         End Sub
 
@@ -326,8 +343,8 @@ Public Class Form1
 
         Private Sub InitialiseGame()
             Randomize()
-
             RefillBag()
+
             currentTetromino = New Tetromino(tetrominoBag.Dequeue)
 
 
@@ -349,6 +366,7 @@ Public Class Form1
                 Case GameState.GameOver
                     currentGameState = newGameState
                 Case GameState.Pause
+                    Debug.Write("Pause State")
                     currentGameState = newGameState
             End Select
         End Sub
@@ -359,6 +377,10 @@ Public Class Form1
                     For Each button In startStateButtons
                         button.HandleClick(mouseX, mouseY)
                     Next
+                Case GameState.Ingame
+                    For Each button In ingameStatebuttons
+                        button.HandleClick(mouseX, mouseY)
+                    Next
             End Select
         End Sub
 
@@ -366,9 +388,11 @@ Public Class Form1
         Public Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer)
             Select Case currentGameState
                 Case GameState.Ingame
-                    DrawIngameState(g)
+                    DrawIngameState(g, mouseX, mouseY)
                 Case GameState.StartMenu
                     DrawStartState(g, mouseX, mouseY)
+                Case GameState.Pause
+                    DrawPauseState(g)
             End Select
         End Sub
 
@@ -388,12 +412,25 @@ Public Class Form1
 
             End Select
         End Sub
-        Private Sub DrawIngameState(g As Graphics)
+
+
+        Private Sub DrawPauseState(g As Graphics)
             g.Clear(Color.Black)
             DrawBorders(g)
             DrawLockedPieces(g)
             DrawCurrentPiece(g)
             DrawScore(g)
+        End Sub
+        Private Sub DrawIngameState(g As Graphics, mouseX As Integer, mouseY As Integer)
+            g.Clear(Color.Black)
+            DrawBorders(g)
+            DrawLockedPieces(g)
+            DrawCurrentPiece(g)
+            DrawScore(g)
+
+            For Each buttons In ingameStatebuttons
+                buttons.Draw(g, mouseX, mouseY)
+            Next
         End Sub
 
         Private Sub UpdateIngameState()
@@ -806,35 +843,51 @@ Public Class Form1
         Private hoverColour As Color
         Private textColour As Color
         Private font As Font
+        Private image As Image
 
-        Public Sub New(x As Integer, y As Integer, width As Integer, height As Integer, text As String, textColour As Color, baseColour As Color, hoverColour As Color, action As Action)
+        Public Sub New(x As Integer, y As Integer, width As Integer, height As Integer,
+               text As String, textColour As Color,
+               baseColour As Color, hoverColour As Color,
+               action As Action)
+
             bounds = New Rectangle(x, y, width, height)
             Me.text = text
+            Me.textColour = textColour
             Me.baseColour = baseColour
             Me.hoverColour = hoverColour
-            Me.textColour = textColour
             Me.action = action
-            font = New Font("Consolas", 16)
+            Me.font = New Font("Consolas", 16)
         End Sub
 
-        Public Sub New(x As Integer, y As Integer, width As Integer, height As Integer, text As String, textColour As Color, baseColour As Color, hoverColour As Color, font As Font)
+
+
+        Public Sub New(x As Integer, y As Integer, width As Integer, height As Integer,
+               image As Image,
+               baseColour As Color, hoverColour As Color,
+               action As Action)
+
             bounds = New Rectangle(x, y, width, height)
-            Me.text = text
+            Me.image = image
             Me.baseColour = baseColour
-            Me.textColour = textColour
             Me.hoverColour = hoverColour
-            Me.font = font
+            Me.action = action
         End Sub
         Public Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer)
             Dim isHover = bounds.Contains(mouseX, mouseY)
-            Dim colour = If(isHover, baseColour, hoverColour)
+            Dim colour = If(isHover, hoverColour, baseColour)
 
-            g.FillRectangle(New SolidBrush(colour), bounds)
+            If image Is Nothing Then
+                g.FillRectangle(New SolidBrush(colour), bounds)
 
-            Dim textSize As SizeF = g.MeasureString(text, font)
-            Dim textXPosition As Single = bounds.X + (bounds.Width - textSize.Width) / 2
-            Dim textYPosition As Single = bounds.Y + (bounds.Height - textSize.Height) / 2
-            g.DrawString(text, font, New SolidBrush(textColour), textXPosition, textYPosition)
+
+                Dim textSize As SizeF = g.MeasureString(text, font)
+                Dim textXPosition As Single = bounds.X + (bounds.Width - textSize.Width) / 2
+                Dim textYPosition As Single = bounds.Y + (bounds.Height - textSize.Height) / 2
+                g.DrawString(text, font, New SolidBrush(textColour), textXPosition, textYPosition)
+            Else
+                g.DrawImage(image, bounds)
+            End If
+
         End Sub
 
         Public Sub HandleClick(mouseX As Integer, mouseY As Integer)
