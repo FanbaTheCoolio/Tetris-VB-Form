@@ -6,6 +6,7 @@
 
 Imports System.Drawing.Drawing2D
 Imports System.Drawing.Text
+Imports System.Numerics
 Imports System.Reflection.Emit
 Imports System.Runtime.CompilerServices
 Imports System.Windows.Forms.AxHost
@@ -199,6 +200,8 @@ Public Class Form1
             ' ** The code below is run when the left mouse button is CLICKED **
             ' *****************************************************************
 
+
+            currentSceneManager.HandleClicks(MouseX, MouseY)
             ' *****************************************************************
             ' ** The code above is run when the left mouse button is CLICKED **
             ' *****************************************************************
@@ -241,7 +244,7 @@ Public Class Form1
         ' ** Put your code to draw each frame below **
         ' ********************************************
 
-        currentSceneManager.Draw(g)
+        currentSceneManager.Draw(g, MouseX, MouseY)
 
         ' ********************************************
         ' ** Put your code to draw each frame above **
@@ -279,8 +282,7 @@ Public Class Form1
         Private screenWidth, screenHeight As Integer
         Private borderColor As Color = Color.RebeccaPurple
         Private softDropCounter As Integer = 0
-
-
+        Private startStateButtons As New List(Of Button)
 
         Private gridOffsetStartX As Integer '= ClientSize.Width * 0.85
         Private Const gridOffsetStartY As Integer = 0
@@ -297,8 +299,9 @@ Public Class Form1
             Me.screenWidth = screenWidth
             Me.screenHeight = screenHeight
             gridOffsetStartX = (screenWidth - (tileSize * gridWidth) - tileSize) / 2
-            InitialiseGame()
-            currentGameState = GameState.Ingame
+
+            startStateButtons.Add(New Button(300, 300, 200, 60, "Start", Color.Black, Color.Blue, Color.DarkBlue, Sub() ChangeGameState(GameState.Ingame)))
+
         End Sub
 
         Public Function IsSoftDropReady()
@@ -342,18 +345,39 @@ Public Class Form1
             End Select
         End Sub
 
+        Public Sub HandleClicks(mouseX As Integer, mouseY As Integer)
+            Select Case currentGameState
+                Case GameState.StartMenu
+                    For Each button In startStateButtons
+                        button.HandeClick(mouseX, mouseY)
+                    Next
+            End Select
+        End Sub
 
-        Public Sub Draw(g As Graphics)
+
+        Public Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer)
             Select Case currentGameState
                 Case GameState.Ingame
                     DrawIngameState(g)
+                Case GameState.StartMenu
+                    DrawStartState(g, mouseX, mouseY)
             End Select
+        End Sub
+
+        Private Sub DrawStartState(g As Graphics, mouseX As Integer, mouseY As Integer)
+            g.Clear(Color.Black)
+
+            For Each buttons In startStateButtons
+                buttons.Draw(g, mouseX, mouseY)
+            Next
         End Sub
 
         Public Sub Update()
             Select Case currentGameState
                 Case GameState.Ingame
                     UpdateIngameState()
+                Case GameState.StartMenu
+
             End Select
         End Sub
         Private Sub DrawIngameState(g As Graphics)
@@ -741,35 +765,80 @@ Public Class Form1
         End Sub
     End Class
 
-    ' needs to be cyclic cause its a fixed amount.
-    Class Queue(Of T)
-        Private itemsList As New List(Of T)
-        Public Function IsEmpty()
-            If itemsList.Count = 0 Then
-                Return True
-            End If
-            Return False
-        End Function
-        Public Sub Enqueue(item As T)
-            itemsList.Add(item)
+    Class Button
+        Private bounds As Rectangle
+        Private action As Action
+        Private text As String
+        Private baseColour As Color
+        Private hoverColour As Color
+        Private textColour As Color
+        Private font As Font
+
+        Public Sub New(x As Integer, y As Integer, width As Integer, height As Integer, text As String, textColour As Color, baseColour As Color, hoverColour As Color, action As Action)
+            bounds = New Rectangle(x, y, width, height)
+            Me.text = text
+            Me.baseColour = baseColour
+            Me.hoverColour = hoverColour
+            Me.textColour = textColour
+            Me.action = action
+            font = New Font("Consolas", 16)
         End Sub
-        Public Function Dequeue() As T
-            If IsEmpty() Then
-                Throw New InvalidOperationException("Queue is empty")
+
+        Public Sub New(x As Integer, y As Integer, width As Integer, height As Integer, text As String, textColour As Color, baseColour As Color, hoverColour As Color, font As Font)
+            bounds = New Rectangle(x, y, width, height)
+            Me.text = text
+            Me.baseColour = baseColour
+            Me.textColour = textColour
+            Me.hoverColour = hoverColour
+            Me.font = font
+        End Sub
+        Public Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer)
+            Dim isHover = bounds.Contains(mouseX, mouseY)
+            Dim colour = If(isHover, baseColour, hoverColour)
+
+            g.FillRectangle(New SolidBrush(colour), bounds)
+
+            Dim textXPosition As Integer = bounds.X + (bounds.Width * 0.35)
+            Dim textYPosition As Integer = bounds.Y + (bounds.Height * 0.1)
+            g.DrawString(text, font, New SolidBrush(Color.Yellow), textXPosition, textYPosition)
+        End Sub
+
+        Public Sub HandeClick(mouseX As Integer, mouseY As Integer)
+            If bounds.Contains(mouseX, mouseY) Then
+                action.Invoke()
             End If
-            Dim queuedValue As T = itemsList(0)
-            itemsList.RemoveAt(0)
-            Return queuedValue
-        End Function
-        Public Sub Randomise()
-            For i = 0 To itemsList.Count - 2
-                Dim j = rand.Next(i, itemsList.Count)
-                Dim temp As T = itemsList(i)
-                itemsList(i) = itemsList(j)
-                itemsList(j) = temp
-            Next
         End Sub
     End Class
+
+    ' needs to be cyclic cause its a fixed amount.
+    Class Queue(Of T)
+            Private itemsList As New List(Of T)
+            Public Function IsEmpty()
+                If itemsList.Count = 0 Then
+                    Return True
+                End If
+                Return False
+            End Function
+            Public Sub Enqueue(item As T)
+                itemsList.Add(item)
+            End Sub
+            Public Function Dequeue() As T
+                If IsEmpty() Then
+                    Throw New InvalidOperationException("Queue is empty")
+                End If
+                Dim queuedValue As T = itemsList(0)
+                itemsList.RemoveAt(0)
+                Return queuedValue
+            End Function
+            Public Sub Randomise()
+                For i = 0 To itemsList.Count - 2
+                    Dim j = rand.Next(i, itemsList.Count)
+                    Dim temp As T = itemsList(i)
+                    itemsList(i) = itemsList(j)
+                    itemsList(j) = temp
+                Next
+            End Sub
+        End Class
 #End Region
 
 
@@ -777,140 +846,140 @@ Public Class Form1
 
 
 #Region "GameWindowSetup"
-    ' Set up the double buffer and Game Loop
-    ' You should not need to modify any of this code
-    Private backBuffer As Image
-    Private bufferDisplay As Graphics
-    Private graphicsDisplay As Graphics
-    Private Shadows Sub Paint(ByVal g As Graphics)
-        GameDraw(g)
-    End Sub
-    Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        Me.Text = ApplicationName
-        Me.SetStyle(ControlStyles.AllPaintingInWmPaint, True)
-        Me.SetStyle(ControlStyles.OptimizedDoubleBuffer, True)
-        Me.SetStyle(ControlStyles.UserPaint, True)
-        Me.Size = DisplaySize
-        Me.ClientSize = DisplaySize
+        ' Set up the double buffer and Game Loop
+        ' You should not need to modify any of this code
+        Private backBuffer As Image
+        Private bufferDisplay As Graphics
+        Private graphicsDisplay As Graphics
+        Private Shadows Sub Paint(ByVal g As Graphics)
+            GameDraw(g)
+        End Sub
+        Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+            Me.Text = ApplicationName
+            Me.SetStyle(ControlStyles.AllPaintingInWmPaint, True)
+            Me.SetStyle(ControlStyles.OptimizedDoubleBuffer, True)
+            Me.SetStyle(ControlStyles.UserPaint, True)
+            Me.Size = DisplaySize
+            Me.ClientSize = DisplaySize
 
 
-        ' style and prevent resizing
-        Me.FormBorderStyle = FormBorderStyle.FixedSingle
-        Me.SetStyle(ControlStyles.FixedHeight, True)
-        Me.SetStyle(ControlStyles.FixedWidth, True)
-        Me.MinimumSize = DisplaySize
-        Me.MaximumSize = DisplaySize
-        Me.Update()
+            ' style and prevent resizing
+            Me.FormBorderStyle = FormBorderStyle.FixedSingle
+            Me.SetStyle(ControlStyles.FixedHeight, True)
+            Me.SetStyle(ControlStyles.FixedWidth, True)
+            Me.MinimumSize = DisplaySize
+            Me.MaximumSize = DisplaySize
+            Me.Update()
 
 
-        ' setting up our buffers
-        backBuffer = New Bitmap(Width, Height)
-        bufferDisplay = Graphics.FromImage(backBuffer)
-        graphicsDisplay = Me.CreateGraphics
+            ' setting up our buffers
+            backBuffer = New Bitmap(Width, Height)
+            bufferDisplay = Graphics.FromImage(backBuffer)
+            graphicsDisplay = Me.CreateGraphics
 
 
-        bufferDisplay.InterpolationMode = InterpolationMode.High
-        bufferDisplay.SmoothingMode = SmoothingMode.AntiAlias
-        bufferDisplay.TextRenderingHint = TextRenderingHint.AntiAlias
+            bufferDisplay.InterpolationMode = InterpolationMode.High
+            bufferDisplay.SmoothingMode = SmoothingMode.AntiAlias
+            bufferDisplay.TextRenderingHint = TextRenderingHint.AntiAlias
 
 
-        Dim scrn = Screen.FromPoint(Cursor.Position)
-        Me.Location = scrn.Bounds.Location
-        Me.CenterToScreen()
+            Dim scrn = Screen.FromPoint(Cursor.Position)
+            Me.Location = scrn.Bounds.Location
+            Me.CenterToScreen()
 
 
-        GameLoad()
-        ' starting our game loop
-        Dim refresh As Timer = New Timer
-        refresh.Interval = FrameInterval
-        refresh.Enabled = True
-        AddHandler refresh.Tick, AddressOf GameLoop
-    End Sub
-    Private Sub GameLoop(ByVal sender As Object, ByVal e As EventArgs)
-        GameUpdate()
-        If ((Me.Disposing = False) And (Me.IsDisposed = False) And (Me.Visible = True)) Then
-            Paint(bufferDisplay)
-            graphicsDisplay.DrawImageUnscaled(backBuffer, New Point(0, 0))
-        End If
-    End Sub
+            GameLoad()
+            ' starting our game loop
+            Dim refresh As Timer = New Timer
+            refresh.Interval = FrameInterval
+            refresh.Enabled = True
+            AddHandler refresh.Tick, AddressOf GameLoop
+        End Sub
+        Private Sub GameLoop(ByVal sender As Object, ByVal e As EventArgs)
+            GameUpdate()
+            If ((Me.Disposing = False) And (Me.IsDisposed = False) And (Me.Visible = True)) Then
+                Paint(bufferDisplay)
+                graphicsDisplay.DrawImageUnscaled(backBuffer, New Point(0, 0))
+            End If
+        End Sub
 #End Region
 
 
 #Region "KeyboardEvents"
-    ' You should not need to modify this section
-    Private Sub Form1_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
-        If KeyPressed.ContainsKey(e.KeyCode) Then
-            KeyPressed(e.KeyCode) = True
-        Else
-            KeyPressed.Add(e.KeyCode, True)
-        End If
-    End Sub
+        ' You should not need to modify this section
+        Private Sub Form1_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
+            If KeyPressed.ContainsKey(e.KeyCode) Then
+                KeyPressed(e.KeyCode) = True
+            Else
+                KeyPressed.Add(e.KeyCode, True)
+            End If
+        End Sub
 
 
-    Private Sub Form1_KeyUp(sender As Object, e As KeyEventArgs) Handles Me.KeyUp
-        If KeyPressed.ContainsKey(e.KeyCode) Then
-            KeyPressed(e.KeyCode) = False
-            ' Cancel the key delay to allow an instant repress
-            KeyDelayCounter = KeyRepeatInterval
-        Else
-            KeyPressed.Add(e.KeyCode, False)
-        End If
-    End Sub
+        Private Sub Form1_KeyUp(sender As Object, e As KeyEventArgs) Handles Me.KeyUp
+            If KeyPressed.ContainsKey(e.KeyCode) Then
+                KeyPressed(e.KeyCode) = False
+                ' Cancel the key delay to allow an instant repress
+                KeyDelayCounter = KeyRepeatInterval
+            Else
+                KeyPressed.Add(e.KeyCode, False)
+            End If
+        End Sub
 
 
 #End Region
 
 
 #Region "MouseEvents"
-    Private Sub Form1_MouseClick(sender As Object, e As MouseEventArgs) Handles Me.MouseClick
-        If e.Button = MouseButtons.Left Then
-            MouseLeftClicked = True
-        End If
-        If e.Button = MouseButtons.Right Then
-            MouseRightClicked = True
-        End If
-    End Sub
+        Private Sub Form1_MouseClick(sender As Object, e As MouseEventArgs) Handles Me.MouseClick
+            If e.Button = MouseButtons.Left Then
+                MouseLeftClicked = True
+            End If
+            If e.Button = MouseButtons.Right Then
+                MouseRightClicked = True
+            End If
+        End Sub
 
 
-    Private Sub Form1_MouseMove(sender As Object, e As MouseEventArgs) Handles Me.MouseMove
-        MouseX = e.Location.X
-        MouseY = e.Location.Y
-    End Sub
+        Private Sub Form1_MouseMove(sender As Object, e As MouseEventArgs) Handles Me.MouseMove
+            MouseX = e.Location.X
+            MouseY = e.Location.Y
+        End Sub
 
 
-    Private Sub Form1_MouseDown(sender As Object, e As MouseEventArgs) Handles Me.MouseDown
-        If e.Button = MouseButtons.Left Then
-            MouseLeftDown = True
-        End If
-        If e.Button = MouseButtons.Right Then
-            MouseRightDown = True
-        End If
-    End Sub
+        Private Sub Form1_MouseDown(sender As Object, e As MouseEventArgs) Handles Me.MouseDown
+            If e.Button = MouseButtons.Left Then
+                MouseLeftDown = True
+            End If
+            If e.Button = MouseButtons.Right Then
+                MouseRightDown = True
+            End If
+        End Sub
 
 
-    Private Sub Form1_MouseUp(sender As Object, e As MouseEventArgs) Handles Me.MouseUp
-        If e.Button = MouseButtons.Left Then
-            MouseLeftDown = False
-        End If
-        If e.Button = MouseButtons.Right Then
-            MouseRightDown = False
-        End If
-    End Sub
+        Private Sub Form1_MouseUp(sender As Object, e As MouseEventArgs) Handles Me.MouseUp
+            If e.Button = MouseButtons.Left Then
+                MouseLeftDown = False
+            End If
+            If e.Button = MouseButtons.Right Then
+                MouseRightDown = False
+            End If
+        End Sub
 
 
-    'Private Sub Label1_Click(sender As Object, e As EventArgs) Handles Label1.Click
+        'Private Sub Label1_Click(sender As Object, e As EventArgs) Handles Label1.Click
 
-    'End Sub
-
-
+        'End Sub
 
 
 
 
-#End Region
 
 
 #End Region
 
 
-End Class
+#End Region
+
+
+    End Class
