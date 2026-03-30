@@ -281,7 +281,7 @@ Public Class Form1
         Private gameScore As Integer = 0
         Private softDropDebounce = False
         Private currentTetromino As Tetromino
-        Private tetrominoBag As New Queue(Of TetrominoType)
+        Private tetrominoBag As New Queue(Of TetrominoType)(7)
         Private tetrominoDelayCounter As Integer = 0
         Private currentGameState As GameState
         Private screenWidth, screenHeight As Integer
@@ -925,34 +925,66 @@ Public Class Form1
     End Class
 
     ' needs to be cyclic cause its a fixed amount.
+
     Class Queue(Of T)
-            Private itemsList As New List(Of T)
-            Public Function IsEmpty()
-                If itemsList.Count = 0 Then
-                    Return True
-                End If
-                Return False
-            End Function
-            Public Sub Enqueue(item As T)
-                itemsList.Add(item)
-            End Sub
-            Public Function Dequeue() As T
-                If IsEmpty() Then
-                    Throw New InvalidOperationException("Queue is empty")
-                End If
-                Dim queuedValue As T = itemsList(0)
-                itemsList.RemoveAt(0)
-                Return queuedValue
-            End Function
-            Public Sub Randomise()
-                For i = 0 To itemsList.Count - 2
-                    Dim j = rand.Next(i, itemsList.Count)
-                    Dim temp As T = itemsList(i)
-                    itemsList(i) = itemsList(j)
-                    itemsList(j) = temp
-                Next
-            End Sub
-        End Class
+        Private items() As T
+        Private front As Integer = 0
+        Private rear As Integer = -1
+        Private count As Integer = 0
+        Private capacity As Integer
+
+        Public Sub New(size As Integer)
+            capacity = size
+            ReDim items(size - 1)
+        End Sub
+
+        Public Function IsEmpty() As Boolean
+            Return count = 0
+        End Function
+
+        Public Function isFull()
+            Return count = capacity
+        End Function
+
+        Public Sub Enqueue(item As T)
+            If isFull() Then
+                Throw New InvalidOperationException("Queue is full")
+            End If
+
+            rear = (rear + 1) Mod capacity
+            items(rear) = item
+            count += 1
+        End Sub
+
+        Public Function Dequeue() As T
+            If IsEmpty() Then
+                Throw New InvalidOperationException("Queue is empty")
+            End If
+
+            Dim value As T = items(front)
+            front = (front + 1) Mod capacity
+            count -= 1
+
+            Return value
+        End Function
+
+        Public Function Peek() As T
+            If IsEmpty() Then
+                Throw New InvalidOperationException("Queue is empty")
+            End If
+
+            Return items(front)
+        End Function
+        Public Sub Randomise()
+            For i = 0 To items.Count - 2
+                Dim j = rand.Next(i, items.Count)
+                Dim temp As T = items(i)
+                items(i) = items(j)
+                items(j) = temp
+            Next
+        End Sub
+    End Class
+
 #End Region
 
 
@@ -960,9 +992,9 @@ Public Class Form1
 
 
 #Region "GameWindowSetup"
-        ' Set up the double buffer and Game Loop
-        ' You should not need to modify any of this code
-        Private backBuffer As Image
+    ' Set up the double buffer and Game Loop
+    ' You should not need to modify any of this code
+    Private backBuffer As Image
         Private bufferDisplay As Graphics
         Private graphicsDisplay As Graphics
         Private Shadows Sub Paint(ByVal g As Graphics)
