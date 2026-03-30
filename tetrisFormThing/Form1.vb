@@ -294,8 +294,9 @@ Public Class Form1
 
         Private gridOffsetStartX As Integer '= ClientSize.Width * 0.85
         Private Const gridOffsetStartY As Integer = 0
-        Private Const scoreOffsetX As Integer = 25
-        Private Const scoreOffsetY As Integer = 100
+        Private scoreXPosition As Integer
+        Private scoreYPosition As Integer
+        Private Const scoreSpacing As Integer = 20
         Private Const tileSize As Integer = 40
         Private Const gridHeight As Integer = 18
         Private Const gridWidth As Integer = 8
@@ -309,23 +310,25 @@ Public Class Form1
             gridOffsetStartX = (screenWidth - (tileSize * gridWidth) - tileSize) / 2
 
 
-            Dim startButtonWidth As Integer = 200
-            Dim startButtonHeight As Integer = 60
+            Dim startButtonWidth As Integer = GetRelativeX(0.25)
+            Dim startButtonHeight As Integer = GetRelativeY(0.1)
 
-            Dim startButtonCentreX As Integer = (screenWidth - startButtonWidth) \ 2
-            Dim startButtonCentreY As Integer = (screenHeight - startButtonHeight) \ 2
+            Dim startButtonXPosition As Integer = GetHorizontalCenter(startButtonWidth)
+            Dim startButtonYPosition As Integer = GetVerticalCenter(startButtonHeight)
 
-            startStateButtons.Add(New Button(startButtonCentreX, startButtonCentreY, startButtonWidth, startButtonHeight, "Start", Color.Black, Color.Blue, Color.DarkBlue, Sub() ChangeGameState(GameState.Ingame)))
+            startStateButtons.Add(New Button(startButtonXPosition, startButtonYPosition, startButtonWidth, startButtonHeight, "Start", Color.Black, Color.Blue, Color.DarkBlue, Sub() InitialiseGame()))
 
-            Dim pauseButtonWidth As Integer = 75
-            Dim pauseButtonHeight As Integer = 75
+            Dim pauseButtonWidth As Integer = GetRelativeX(0.2)
+            Dim pauseButtonHeight As Integer = GetRelativeY(0.08)
 
-            Dim pauseButtonCentreX As Integer = (screenWidth - startButtonWidth) \ 20
-            Dim pauseButtonCentreY As Integer = (screenHeight - startButtonHeight) \ 40
+            Dim pauseButtonCentreX As Integer = GetRelativeX(0.05)
+            Dim pauseButtonCentreY As Integer = GetRelativeY(0.05)
 
-            ingameStatebuttons.Add(New Button(pauseButtonCentreX, pauseButtonCentreY, pauseButtonWidth, pauseButtonHeight, My.Resources.Resource1.PauseImage, Color.DarkBlue, Color.Yellow, Sub() ChangeGameState(GameState.Pause)))
-            pauseStateButtons.Add(New Button(pauseButtonCentreX, pauseButtonCentreY, pauseButtonWidth, pauseButtonHeight, My.Resources.Resource1.PauseImage, Color.DarkBlue, Color.Yellow, Sub() ChangeGameState(GameState.Pause)))
+            ingameStatebuttons.Add(New Button(pauseButtonCentreX, pauseButtonCentreY, pauseButtonWidth, pauseButtonHeight, My.Resources.Resource1.Pause, Color.DarkBlue, Color.Yellow, Sub() ChangeGameState(GameState.Pause)))
+            pauseStateButtons.Add(New Button(pauseButtonCentreX, pauseButtonCentreY, pauseButtonWidth, pauseButtonHeight, My.Resources.Resource1.Play, Color.DarkBlue, Color.Yellow, Sub() ChangeGameState(GameState.Ingame)))
 
+            scoreXPosition = pauseButtonCentreX
+            scoreYPosition = pauseButtonCentreY + (pauseButtonHeight + scoreSpacing)
 
         End Sub
 
@@ -354,6 +357,8 @@ Public Class Form1
                     board(x, y) = TetrominoType.None
                 Next
             Next
+
+            ChangeGameState(GameState.Ingame)
         End Sub
 
         Private Sub ChangeGameState(newGameState As GameState)
@@ -361,7 +366,6 @@ Public Class Form1
                 Case GameState.StartMenu
                     currentGameState = newGameState
                 Case GameState.Ingame
-                    InitialiseGame()
                     currentGameState = newGameState
                 Case GameState.GameOver
                     currentGameState = newGameState
@@ -381,10 +385,28 @@ Public Class Form1
                     For Each button In ingameStatebuttons
                         button.HandleClick(mouseX, mouseY)
                     Next
+                Case GameState.Pause
+                    For Each button In pauseStateButtons
+                        button.HandleClick(mouseX, mouseY)
+                    Next
             End Select
         End Sub
 
+        Private Function GetHorizontalCenter(width As Integer) As Integer
+            Return (screenWidth - width) \ 2
+        End Function
 
+        Private Function GetVerticalCenter(height As Integer) As Integer
+            Return (screenHeight - height) \ 2
+        End Function
+
+        Private Function GetRelativeX(percent As Double) As Integer
+            Return CInt(screenWidth * percent)
+        End Function
+
+        Private Function GetRelativeY(percent As Double) As Integer
+            Return CInt(screenHeight * percent)
+        End Function
         Public Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer)
             Select Case currentGameState
                 Case GameState.Ingame
@@ -392,7 +414,7 @@ Public Class Form1
                 Case GameState.StartMenu
                     DrawStartState(g, mouseX, mouseY)
                 Case GameState.Pause
-                    DrawPauseState(g)
+                    DrawPauseState(g, mouseX, mouseY)
             End Select
         End Sub
 
@@ -414,12 +436,16 @@ Public Class Form1
         End Sub
 
 
-        Private Sub DrawPauseState(g As Graphics)
+        Private Sub DrawPauseState(g As Graphics, mouseX As Integer, mouseY As Integer)
             g.Clear(Color.Black)
             DrawBorders(g)
             DrawLockedPieces(g)
             DrawCurrentPiece(g)
             DrawScore(g)
+
+            For Each buttons In pauseStateButtons
+                buttons.Draw(g, mouseX, mouseY)
+            Next
         End Sub
         Private Sub DrawIngameState(g As Graphics, mouseX As Integer, mouseY As Integer)
             g.Clear(Color.Black)
@@ -460,7 +486,8 @@ Public Class Form1
         Private Sub DrawScore(g As Graphics)
             Dim scoreString As String = "Score : " & gameScore
             Dim scoreFont As Font = New Font("Consolas", 20, FontStyle.Bold)
-            g.DrawString(scoreString, scoreFont, New SolidBrush(Color.Black), scoreOffsetX, scoreOffsetY)
+
+            g.DrawString(scoreString, scoreFont, New SolidBrush(Color.Black), scoreXPosition, scoreYPosition)
         End Sub
         Private Sub DrawBorders(g As Graphics)
             g.FillRectangle(New SolidBrush(borderColor), 0, 0, gridOffsetStartX, screenHeight)
