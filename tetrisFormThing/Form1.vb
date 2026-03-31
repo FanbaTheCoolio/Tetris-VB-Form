@@ -12,6 +12,7 @@ Imports System.Reflection.Emit
 Imports System.Runtime.CompilerServices
 Imports System.Windows.Forms.AxHost
 Imports System.Windows.Forms.Design
+Imports System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel
 
 
 Public Class Form1
@@ -297,6 +298,7 @@ Public Class Form1
         Private scoreXPosition As Integer
         Private scoreYPosition As Integer
         Private Const scoreSpacing As Integer = 20
+        Private Const nextPieceSpacing As Integer = 20
         Private Const tileSize As Integer = 40
         Private Const gridHeight As Integer = 18
         Private Const gridWidth As Integer = 8
@@ -418,6 +420,24 @@ Public Class Form1
             End Select
         End Sub
 
+        Private Sub DrawNextPiece(g As Graphics)
+            If tetrominoBag.IsEmpty Then
+                RefillBag()
+            End If
+            Dim nextType = tetrominoBag.Peek()
+            Dim previewTetromino = New Tetromino(nextType)
+
+            Dim previewGridXPosition As Integer = ((tileSize * gridWidth) + gridOffsetStartX) * GetRelativeX(0.1)
+
+            For Each block In previewTetromino.getBlockRelativePositions
+                Dim x = screenWidth - 150 + (block.X * tileSize)
+                Dim y = 50 + (block.Y * tileSize)
+
+                g.FillRectangle(New SolidBrush(previewTetromino.GetTileColour), x, y, tileSize, tileSize)
+                g.DrawRectangle(Pens.Black, x, y, tileSize, tileSize)
+            Next
+
+        End Sub
         Private Sub DrawStartState(g As Graphics, mouseX As Integer, mouseY As Integer)
             g.Clear(Color.Black)
 
@@ -452,6 +472,7 @@ Public Class Form1
             DrawBorders(g)
             DrawLockedPieces(g)
             DrawCurrentPiece(g)
+            DrawNextPiece(g)
             DrawScore(g)
 
             For Each buttons In ingameStatebuttons
