@@ -297,20 +297,26 @@ Public Class Form1
         Private Const gridOffsetStartY As Integer = 0
         Private scoreXPosition As Integer
         Private scoreYPosition As Integer
-        Private Const scoreSpacing As Integer = 20
-        Private Const nextPieceSpacing As Integer = 20
+        Private Const scoreSpacing As Integer = tileSize \ 2
+        Private Const previewSpacing As Integer = tileSize \ 2
         Private Const tileSize As Integer = 40
         Private Const gridHeight As Integer = 18
         Private Const gridWidth As Integer = 8
         Private Const tetrominoCounterIncrement As Integer = 1
         Private Const tetrominoUpdateInterval As Integer = 30
         Private Const softDropInterval As Integer = 5
+        Private previewAnchorX As Integer
+        Private previewAnchorY As Integer
+        Dim previewBoxSize As Integer = 4
 
         Public Sub New(screenWidth As Integer, screenHeight As Integer)
+
             Me.screenWidth = screenWidth
             Me.screenHeight = screenHeight
             gridOffsetStartX = (screenWidth - (tileSize * gridWidth) - tileSize) / 2
 
+            previewAnchorX = ((gridOffsetStartX + ((gridWidth + 1)) * tileSize) + (tileSize * 2))
+            previewAnchorY = tileSize * 2
 
             Dim startButtonWidth As Integer = GetRelativeX(0.25)
             Dim startButtonHeight As Integer = GetRelativeY(0.1)
@@ -420,24 +426,7 @@ Public Class Form1
             End Select
         End Sub
 
-        Private Sub DrawNextPiece(g As Graphics)
-            If tetrominoBag.IsEmpty Then
-                RefillBag()
-            End If
-            Dim nextType = tetrominoBag.Peek()
-            Dim previewTetromino = New Tetromino(nextType)
 
-            Dim previewGridXPosition As Integer = ((tileSize * gridWidth) + gridOffsetStartX) * GetRelativeX(0.1)
-
-            For Each block In previewTetromino.getBlockRelativePositions
-                Dim x = screenWidth - 150 + (block.X * tileSize)
-                Dim y = 50 + (block.Y * tileSize)
-
-                g.FillRectangle(New SolidBrush(previewTetromino.GetTileColour), x, y, tileSize, tileSize)
-                g.DrawRectangle(Pens.Black, x, y, tileSize, tileSize)
-            Next
-
-        End Sub
         Private Sub DrawStartState(g As Graphics, mouseX As Integer, mouseY As Integer)
             g.Clear(Color.Black)
 
@@ -502,7 +491,26 @@ Public Class Form1
             End If
         End Sub
 
+        Private Sub DrawNextPiece(g As Graphics)
+            If tetrominoBag.IsEmpty Then
+                RefillBag()
+            End If
+            Dim nextType = tetrominoBag.Peek()
+            Dim previewTetromino = New Tetromino(nextType)
 
+
+            For Each block In previewTetromino.getBlockRelativePositions
+                Dim x = previewAnchorX + (block.X * tileSize)
+                Dim y = previewAnchorY + (block.Y * tileSize)
+
+                g.FillRectangle(New SolidBrush(previewTetromino.GetTileColour), x, y, tileSize, tileSize)
+                g.DrawRectangle(Pens.Black, x, y, tileSize, tileSize)
+            Next
+
+            Dim previewFont As Font = New Font("Consolas", 20, FontStyle.Bold)
+            Dim previewLabelYPosition As Integer = previewAnchorY - (previewSpacing * 2)
+            g.DrawString("Preview", previewFont, New SolidBrush(Color.Black), previewAnchorX, previewLabelYPosition)
+        End Sub
 
         Private Sub DrawScore(g As Graphics)
             Dim scoreString As String = "Score : " & gameScore
