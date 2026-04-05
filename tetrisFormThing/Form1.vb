@@ -278,7 +278,6 @@ Public Class Form1
 #Region "User Defined Classes"
     Class SceneManager
         Private board(gridWidth, gridHeight) As TetrominoType
-
         Private gameScore As Integer = 0
         Private softDropDebounce = False
         Private currentTetromino As Tetromino
@@ -288,6 +287,7 @@ Public Class Form1
         Private screenWidth, screenHeight As Integer
         Private borderColor As Color = Color.RebeccaPurple
         Private softDropCounter As Integer = 0
+
         Private startStateButtons As New List(Of Button)
         Private ingameStatebuttons As New List(Of Button)
         Private pauseStateButtons As New List(Of Button)
@@ -305,9 +305,10 @@ Public Class Form1
         Private Const tetrominoCounterIncrement As Integer = 1
         Private Const tetrominoUpdateInterval As Integer = 30
         Private Const softDropInterval As Integer = 5
+        Private Const previewBoxSize As Integer = 4
         Private previewAnchorX As Integer
         Private previewAnchorY As Integer
-        Dim previewBoxSize As Integer = 4
+
 
         Public Sub New(screenWidth As Integer, screenHeight As Integer)
 
@@ -315,7 +316,7 @@ Public Class Form1
             Me.screenHeight = screenHeight
             gridOffsetStartX = (screenWidth - (tileSize * gridWidth) - tileSize) / 2
 
-            previewAnchorX = ((gridOffsetStartX + ((gridWidth + 1)) * tileSize) + (tileSize * 2))
+            previewAnchorX = ((gridOffsetStartX + ((gridWidth)) * tileSize) + (tileSize * 2))
             previewAnchorY = tileSize * 2
 
             Dim startButtonWidth As Integer = GetRelativeX(0.25)
@@ -378,7 +379,6 @@ Public Class Form1
                 Case GameState.GameOver
                     currentGameState = newGameState
                 Case GameState.Pause
-                    Debug.Write("Pause State")
                     currentGameState = newGameState
             End Select
         End Sub
@@ -423,6 +423,8 @@ Public Class Form1
                     DrawStartState(g, mouseX, mouseY)
                 Case GameState.Pause
                     DrawPauseState(g, mouseX, mouseY)
+                Case GameState.GameOver
+                    DrawGameOverState(g, mouseX, mouseY)
             End Select
         End Sub
 
@@ -443,18 +445,41 @@ Public Class Form1
 
             End Select
         End Sub
+        Private Function IsGameOver(upcomingPiece As TetrominoType) As Boolean
+            Dim upcomingTetromino As New Tetromino(upcomingPiece)
+            For Each relativePosition In currentTetromino.getBlockRelativePositions
+                Dim brickXPosition = upcomingTetromino.GetXPosition + relativePosition.X
+                Dim brickYPosition = upcomingTetromino.GetYPosition + relativePosition.Y
 
+                Dim yPosCondition As Boolean = (brickYPosition >= 0 And brickYPosition <= gridHeight)
 
+                If yPosCondition Then
+                    If board(brickXPosition, brickYPosition) <> TetrominoType.None Then
+                        Debug.WriteLine(brickXPosition & " " & brickYPosition)
+                        Return True
+                    End If
+                End If
+            Next
+
+            Return False
+        End Function
+
+        Private Sub DrawGameOverState(g As Graphics, mouseX As Integer, mouseY As Integer)
+
+        End Sub
         Private Sub DrawPauseState(g As Graphics, mouseX As Integer, mouseY As Integer)
             g.Clear(Color.Black)
             DrawBorders(g)
             DrawLockedPieces(g)
             DrawCurrentPiece(g)
+            DrawNextPiece(g)
             DrawScore(g)
 
             For Each buttons In pauseStateButtons
                 buttons.Draw(g, mouseX, mouseY)
             Next
+
+
         End Sub
         Private Sub DrawIngameState(g As Graphics, mouseX As Integer, mouseY As Integer)
             g.Clear(Color.Black)
@@ -490,26 +515,61 @@ Public Class Form1
                 tetrominoDelayCounter = 0
             End If
         End Sub
+        Private Function getMinimumRelativePositionX(previewTetromino As Tetromino) As Integer
+            Dim minimumRelativePosition As Integer = 0
+            For Each relativePosition In previewTetromino.getBlockRelativePositions
+                Dim x = relativePosition.X
 
+                If x < minimumRelativePosition Then
+                    minimumRelativePosition = x
+                End If
+
+
+            Next
+            Return minimumRelativePosition
+        End Function
+
+        Private Function getMaximumRelativePositionX(previewTetromino As Tetromino) As Integer
+            Dim maximumRelativePosition As Integer = 0
+            For Each relativePosition In previewTetromino.getBlockRelativePositions
+                Dim x = relativePosition.X
+
+                If x > maximumRelativePosition Then
+                    maximumRelativePosition = x
+                End If
+
+
+            Next
+            Return maximumRelativePosition
+        End Function
         Private Sub DrawNextPiece(g As Graphics)
-            If tetrominoBag.IsEmpty Then
-                RefillBag()
-            End If
+
             Dim nextType = tetrominoBag.Peek()
             Dim previewTetromino = New Tetromino(nextType)
 
 
+            Dim minimumRelativeX As Integer = getMinimumRelativePositionX(previewTetromino)
+            Dim pieceWidth = getMaximumRelativePositionX(previewTetromino) - minimumRelativeX + 1
+
+
+            Dim offsetX = (previewBoxSize - pieceWidth) \ 2 - minimumRelativeX
+
+
+
             For Each block In previewTetromino.getBlockRelativePositions
-                Dim x = previewAnchorX + (block.X * tileSize)
+                Dim x = previewAnchorX + ((block.X + offsetX) * tileSize)
                 Dim y = previewAnchorY + (block.Y * tileSize)
 
                 g.FillRectangle(New SolidBrush(previewTetromino.GetTileColour), x, y, tileSize, tileSize)
                 g.DrawRectangle(Pens.Black, x, y, tileSize, tileSize)
             Next
 
+
             Dim previewFont As Font = New Font("Consolas", 20, FontStyle.Bold)
+            Dim labelString As String = "Preview"
+
             Dim previewLabelYPosition As Integer = previewAnchorY - (previewSpacing * 2)
-            g.DrawString("Preview", previewFont, New SolidBrush(Color.Black), previewAnchorX, previewLabelYPosition)
+            g.DrawString(labelString, previewFont, New SolidBrush(Color.Black), previewAnchorX, previewLabelYPosition)
         End Sub
 
         Private Sub DrawScore(g As Graphics)
@@ -573,10 +633,20 @@ Public Class Form1
             Next
             ClearLines()
 
+
+            Dim upcomingPiece As TetrominoType = tetrominoBag.Peek
+            Debug.WriteLine("Mew")
+            If IsGameOver(upcomingPiece) Then
+                Debug.WriteLine("Mew2")
+                ChangeGameState(GameState.GameOver)
+            Else
+                currentTetromino = New Tetromino(tetrominoBag.Dequeue)
+            End If
+
+
             If tetrominoBag.IsEmpty Then
                 RefillBag()
             End If
-            currentTetromino = New Tetromino(tetrominoBag.Dequeue)
 
 
         End Sub
@@ -643,7 +713,6 @@ Public Class Form1
 
         Public Sub HandleAction(action As PlayerAction)
 
-
             If currentGameState <> GameState.Ingame Then Return
 
             Select Case action
@@ -667,7 +736,7 @@ Public Class Form1
                 Dim brickXPosition = currentTetromino.GetXPosition + relativePosition.X
                 Dim brickYPosition = currentTetromino.GetYPosition + relativePosition.Y
 
-                If Not TryTransformation(brickXPosition - 1, brickYPosition) Then
+                If Not IsValidPosition(brickXPosition - 1, brickYPosition) Then
                     canMoveLeft = False
 
                 End If
@@ -683,7 +752,7 @@ Public Class Form1
                 Dim brickXPosition = currentTetromino.GetXPosition + relativePosition.X
                 Dim brickYPosition = currentTetromino.GetYPosition + relativePosition.Y
 
-                If Not TryTransformation(brickXPosition + 1, brickYPosition) Then
+                If Not IsValidPosition(brickXPosition + 1, brickYPosition) Then
                     canMoveRight = False
 
                 End If
@@ -703,7 +772,7 @@ Public Class Form1
                 Dim brickXPosition = currentTetromino.GetXPosition + relativePosition.X
                 Dim brickYPosition = currentTetromino.GetYPosition + relativePosition.Y
 
-                If Not TryTransformation(brickXPosition, brickYPosition) Then
+                If Not IsValidPosition(brickXPosition, brickYPosition) Then
                     canRotateRight = False
                 End If
             Next
@@ -721,7 +790,7 @@ Public Class Form1
                 Dim brickXPosition = currentTetromino.GetXPosition + relativePosition.X
                 Dim brickYPosition = currentTetromino.GetYPosition + relativePosition.Y
 
-                If Not TryTransformation(brickXPosition, brickYPosition) Then
+                If Not IsValidPosition(brickXPosition, brickYPosition) Then
                     canRotateRight = False
 
                 End If
@@ -730,7 +799,7 @@ Public Class Form1
                 currentTetromino.Rotate(DirectionType.Left)
             End If
         End Sub
-        Private Function TryTransformation(newX As Integer, newY As Integer) As Boolean
+        Private Function IsValidPosition(newX As Integer, newY As Integer) As Boolean
             Dim xPosCondition As Boolean = (newX >= 0 And newX <= gridWidth)
             Dim yPosCondition As Boolean = (newY >= 0 And newY <= gridHeight)
 
@@ -953,7 +1022,7 @@ Public Class Form1
         End Sub
     End Class
 
-    ' needs to be cyclic cause its a fixed amount.
+
 
     Class Queue(Of T)
         Private items() As T
