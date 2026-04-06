@@ -304,6 +304,7 @@ Public Class Form1
         Private ingameStatebuttons As New List(Of Button)
         Private pauseStateButtons As New List(Of Button)
 
+        Private stateButtons As New Dictionary(Of GameState, Button)
 
         Private gridOffsetStartX As Integer '= ClientSize.Width * 0.85
         Private Const gridOffsetStartY As Integer = 0
@@ -341,6 +342,8 @@ Public Class Form1
 
             Dim startButtonXPosition As Integer = GetHorizontalCenter(startButtonWidth)
             Dim startButtonYPosition As Integer = GetVerticalCenter(startButtonHeight)
+
+
 
             startStateButtons.Add(New Button(startButtonXPosition, startButtonYPosition, startButtonWidth, startButtonHeight, "Start", Color.Black, Color.Blue, Color.DarkBlue, Sub() InitialiseGame()))
 
@@ -389,7 +392,6 @@ Public Class Form1
         End Sub
 
 #End Region
-
 
 #Region "Game Loop Logic"
         Public Sub Update()
@@ -852,13 +854,6 @@ Public Class Form1
             Return maximumRelativePosition
         End Function
 #End Region
-
-
-
-
-
-
-
 
     End Class
     Public Structure Block
