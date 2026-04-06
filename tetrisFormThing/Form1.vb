@@ -13,6 +13,7 @@ Imports System.Runtime.CompilerServices
 Imports System.Windows.Forms.AxHost
 Imports System.Windows.Forms.Design
 Imports System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel
+Imports NAudio.Wave
 
 
 Public Class Form1
@@ -31,6 +32,7 @@ Public Class Form1
     Public MouseLeftDown As Boolean = False ' Is the left mouse button currently down?
     Public MouseRightDown As Boolean = False ' Is the right mouse button currently down?
     Public MouseX, MouseY As Integer ' These hold the current x and y positions of the mousepointer relative to the upper left corner of the form
+    'Public Shared audioController As New AudioManager
     Public Shared rand As Random = New Random
 
 #End Region
@@ -94,7 +96,7 @@ Public Class Form1
         ' **********************************************************************
 
         currentSceneManager = New SceneManager(ClientSize.Width, ClientSize.Height)
-
+        'audioController.Load("ClickSound", My.Resources.Resource1.ButtonClickSound1)
         ' **********************************************************************
         ' ** The code above will run once when the application loads / starts **
         ' **********************************************************************
@@ -152,7 +154,7 @@ Public Class Form1
             End If
 
 
-                If KeyPressed.ContainsKey(37) Then
+            If KeyPressed.ContainsKey(37) Then
                 If KeyPressed(37) Then
                     ' *********************************************************
                     ' ** The code below runs when the LEFT (37) key is pressed **
@@ -300,11 +302,7 @@ Public Class Form1
         Private borderColor As Color = Color.RebeccaPurple
         Private softDropCounter As Integer = 0
 
-        Private startStateButtons As New List(Of Button)
-        Private ingameStatebuttons As New List(Of Button)
-        Private pauseStateButtons As New List(Of Button)
-
-        Private stateButtons As New Dictionary(Of GameState, Button)
+        Private stateButtons As New Dictionary(Of GameState, List(Of BaseButton))
 
         Private gridOffsetStartX As Integer '= ClientSize.Width * 0.85
         Private Const gridOffsetStartY As Integer = 0
@@ -329,7 +327,12 @@ Public Class Form1
 
 #Region "Initialisation & Game State"
         Public Sub New(screenWidth As Integer, screenHeight As Integer)
-
+            stateButtons = New Dictionary(Of GameState, List(Of BaseButton)) From {
+    {GameState.StartMenu, New List(Of BaseButton)},
+    {GameState.Ingame, New List(Of BaseButton)},
+    {GameState.Pause, New List(Of BaseButton)},
+    {GameState.GameOver, New List(Of BaseButton)}
+}
             Me.screenWidth = screenWidth
             Me.screenHeight = screenHeight
             gridOffsetStartX = (screenWidth - (tileSize * gridWidth) - tileSize) / 2
@@ -344,8 +347,8 @@ Public Class Form1
             Dim startButtonYPosition As Integer = GetVerticalCenter(startButtonHeight)
 
 
+            stateButtons(GameState.StartMenu).Add(New TextButton(startButtonXPosition, startButtonYPosition, startButtonWidth, startButtonHeight, "Start", Color.Black, Color.Blue, Color.DarkBlue, Sub() InitialiseGame()))
 
-            startStateButtons.Add(New Button(startButtonXPosition, startButtonYPosition, startButtonWidth, startButtonHeight, "Start", Color.Black, Color.Blue, Color.DarkBlue, Sub() InitialiseGame()))
 
             Dim pauseButtonWidth As Integer = GetRelativeX(0.2)
             Dim pauseButtonHeight As Integer = GetRelativeY(0.08)
@@ -353,8 +356,10 @@ Public Class Form1
             Dim pauseButtonCentreX As Integer = GetRelativeX(0.05)
             Dim pauseButtonCentreY As Integer = GetRelativeY(0.05)
 
-            ingameStatebuttons.Add(New Button(pauseButtonCentreX, pauseButtonCentreY, pauseButtonWidth, pauseButtonHeight, My.Resources.Resource1.Pause, Color.DarkBlue, Color.Yellow, Sub() ChangeGameState(GameState.Pause)))
-            pauseStateButtons.Add(New Button(pauseButtonCentreX, pauseButtonCentreY, pauseButtonWidth, pauseButtonHeight, My.Resources.Resource1.Play, Color.DarkBlue, Color.Yellow, Sub() ChangeGameState(GameState.Ingame)))
+
+            stateButtons(GameState.Ingame).Add(New ImageButton(pauseButtonCentreX, pauseButtonCentreY, pauseButtonWidth, pauseButtonHeight, My.Resources.Resource1.Pause, Sub() ChangeGameState(GameState.Pause)))
+            stateButtons(GameState.Pause).Add(New ImageButton(pauseButtonCentreX, pauseButtonCentreY, pauseButtonWidth, pauseButtonHeight, My.Resources.Resource1.Play, Sub() ChangeGameState(GameState.Ingame)))
+
 
             scoreXPosition = pauseButtonCentreX
             scoreYPosition = pauseButtonCentreY + (pauseButtonHeight + scoreSpacing)
@@ -650,20 +655,11 @@ Public Class Form1
 
 #Region "UI And Input Handling"
         Public Sub HandleClicks(mouseX As Integer, mouseY As Integer)
-            Select Case currentGameState
-                Case GameState.StartMenu
-                    For Each button In startStateButtons
-                        button.HandleClick(mouseX, mouseY)
-                    Next
-                Case GameState.Ingame
-                    For Each button In ingameStatebuttons
-                        button.HandleClick(mouseX, mouseY)
-                    Next
-                Case GameState.Pause
-                    For Each button In pauseStateButtons
-                        button.HandleClick(mouseX, mouseY)
-                    Next
-            End Select
+            If Not stateButtons.ContainsKey(currentGameState) Then Return
+
+            For Each button In stateButtons(currentGameState)
+                button.HandleClick(mouseX, mouseY)
+            Next
         End Sub
 #End Region
 
@@ -682,16 +678,22 @@ Public Class Form1
         End Sub
 
 
+
+        Private Sub DrawButtons(g As Graphics, mouseX As Integer, mouseY As Integer)
+            For Each button In stateButtons(currentGameState)
+                button.Draw(g, mouseX, mouseY)
+            Next
+        End Sub
         Private Sub DrawStartState(g As Graphics, mouseX As Integer, mouseY As Integer)
             g.Clear(Color.Black)
 
-            For Each buttons In startStateButtons
-                buttons.Draw(g, mouseX, mouseY)
-            Next
+            DrawButtons(g, mouseX, mouseY)
         End Sub
 
         Private Sub DrawGameOverState(g As Graphics, mouseX As Integer, mouseY As Integer)
             g.Clear(Color.Black)
+
+            DrawButtons(g, mouseX, mouseY)
         End Sub
         Private Sub DrawPauseState(g As Graphics, mouseX As Integer, mouseY As Integer)
             g.Clear(Color.Black)
@@ -701,10 +703,7 @@ Public Class Form1
             DrawNextPiece(g)
             DrawScore(g)
 
-            For Each buttons In pauseStateButtons
-                buttons.Draw(g, mouseX, mouseY)
-            Next
-
+            DrawButtons(g, mouseX, mouseY)
 
         End Sub
         Private Sub DrawIngameState(g As Graphics, mouseX As Integer, mouseY As Integer)
@@ -715,9 +714,7 @@ Public Class Form1
             DrawNextPiece(g)
             DrawScore(g)
 
-            For Each buttons In ingameStatebuttons
-                buttons.Draw(g, mouseX, mouseY)
-            Next
+            DrawButtons(g, mouseX, mouseY)
         End Sub
         Private Sub DrawNextPiece(g As Graphics)
 
@@ -1002,128 +999,190 @@ Public Class Form1
         End Sub
     End Class
 
-    Class Button
-        Private bounds As Rectangle
-        Private action As Action
-        Private text As String
-        Private baseColour As Color
-        Private hoverColour As Color
-        Private textColour As Color
-        Private font As Font
-        Private image As Image
 
-        Public Sub New(x As Integer, y As Integer, width As Integer, height As Integer,
-               text As String, textColour As Color,
-               baseColour As Color, hoverColour As Color,
-               action As Action)
+    MustInherit Class BaseButton
+        Protected bounds As Rectangle
+        Protected action As Action
+        Protected currentScale As Double = 1.0
+        Private Const initialScale As Double = 1.0
+        Private Const hoverScale As Double = 1.1
+        Private Const scaleSpeed As Double = 0.1
 
+
+        Public Sub New(x As Integer, y As Integer, width As Integer, height As Integer, action As Action)
             bounds = New Rectangle(x, y, width, height)
-            Me.text = text
-            Me.textColour = textColour
-            Me.baseColour = baseColour
-            Me.hoverColour = hoverColour
+
+
             Me.action = action
-            Me.font = New Font("Consolas", 16)
-        End Sub
-
-
-
-        Public Sub New(x As Integer, y As Integer, width As Integer, height As Integer,
-               image As Image,
-               baseColour As Color, hoverColour As Color,
-               action As Action)
-
-            bounds = New Rectangle(x, y, width, height)
-            Me.image = image
-            Me.baseColour = baseColour
-            Me.hoverColour = hoverColour
-            Me.action = action
-        End Sub
-        Public Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer)
-            Dim isHover = bounds.Contains(mouseX, mouseY)
-            Dim colour = If(isHover, hoverColour, baseColour)
-
-            If image Is Nothing Then
-                g.FillRectangle(New SolidBrush(colour), bounds)
-
-
-                Dim textSize As SizeF = g.MeasureString(text, font)
-                Dim textXPosition As Single = bounds.X + (bounds.Width - textSize.Width) / 2
-                Dim textYPosition As Single = bounds.Y + (bounds.Height - textSize.Height) / 2
-                g.DrawString(text, font, New SolidBrush(textColour), textXPosition, textYPosition)
-            Else
-                g.DrawImage(image, bounds)
-            End If
-
         End Sub
 
         Public Sub HandleClick(mouseX As Integer, mouseY As Integer)
             If bounds.Contains(mouseX, mouseY) Then
                 action.Invoke()
+                'audioController.Play("ClickSound")
             End If
+        End Sub
+
+        Protected Sub UpdateScale(isHover As Boolean)
+            Dim targetScale = If(isHover, hoverScale, initialScale)
+
+            currentScale += (targetScale - currentScale) * scaleSpeed
+        End Sub
+
+        Protected Function GetScaledBounds() As Rectangle
+            Dim newWidth = bounds.Width * currentScale
+            Dim newHeight = bounds.Height * currentScale
+
+            Dim offsetX = (newWidth - bounds.Width) / 2
+            Dim offsetY = (newHeight - bounds.Height) / 2
+
+            Return New Rectangle(
+                bounds.X - offsetX,
+                bounds.Y - offsetY,
+                newWidth,
+                newHeight
+            )
+        End Function
+        Public MustOverride Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer)
+    End Class
+
+    Class TextButton
+        Inherits BaseButton
+
+        Private text As String
+        Private baseColour As Color
+        Private hoverColour As Color
+        Private textColour As Color
+        Private font As Font
+
+        Public Sub New(x As Integer, y As Integer, width As Integer, height As Integer,
+                 text As String, textColour As Color,
+                 baseColour As Color, hoverColour As Color,
+                 action As Action)
+            MyBase.New(x, y, width, height, action)
+
+            Me.textColour = textColour
+            Me.baseColour = baseColour
+            Me.hoverColour = hoverColour
+            Me.text = text
+            Me.font = New Font("Consolas", 16)
+
+        End Sub
+
+        Public Overrides Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer)
+            Dim isHover = bounds.Contains(mouseX, mouseY)
+            Dim colour = If(isHover, hoverColour, baseColour)
+            Dim drawBounds = GetScaledBounds()
+            UpdateScale(isHover)
+
+            g.FillRectangle(New SolidBrush(colour), drawBounds)
+
+            Dim textSize As SizeF = g.MeasureString(text, font)
+            Dim textX = drawBounds.X + (drawBounds.Width - textSize.Width) / 2
+            Dim textY = drawBounds.Y + (drawBounds.Height - textSize.Height) / 2
+
+            g.DrawString(text, font, New SolidBrush(textColour), textX, textY)
         End Sub
     End Class
 
+    Class ImageButton
+        Inherits BaseButton
+
+        Private image As Image
+
+        Public Sub New(x As Integer, y As Integer, width As Integer, height As Integer,
+                   image As Image,
+                   action As Action)
+
+            MyBase.New(x, y, width, height, action)
+            Me.image = image
+        End Sub
+
+        Public Overrides Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer)
+            Dim isHover = bounds.Contains(mouseX, mouseY)
+            UpdateScale(isHover)
+
+            Dim drawBounds = GetScaledBounds()
+            g.DrawImage(image, drawBounds)
+        End Sub
+    End Class
+
+    'Class AudioManager
+    '    Private sounds As New Dictionary(Of String, AudioFileReader)
+    '    Private outputs As New Dictionary(Of String, WaveOutEvent)
+
+    '    Public Sub Load(name As String, resourceStream As System.IO.UnmanagedMemoryStream)
+    '        Dim player As New System.Media.SoundPlayer(resourceStream)
+    '        player.Load()
+    '        sounds(name) = player
+    '    End Sub
+
+    '    Public Sub Play(name As String)
+    '        If Not sounds.ContainsKey(name) Then Return
+
+    '        sounds(name).Play()
+    '    End Sub
+    'End Class
 
 
     Class Queue(Of T)
-        Private items() As T
-        Private front As Integer = 0
-        Private rear As Integer = -1
-        Private count As Integer = 0
-        Private capacity As Integer
+            Private items() As T
+            Private front As Integer = 0
+            Private rear As Integer = -1
+            Private count As Integer = 0
+            Private capacity As Integer
 
-        Public Sub New(size As Integer)
-            capacity = size
-            ReDim items(size - 1)
-        End Sub
+            Public Sub New(size As Integer)
+                capacity = size
+                ReDim items(size - 1)
+            End Sub
 
-        Public Function IsEmpty() As Boolean
-            Return count = 0
-        End Function
+            Public Function IsEmpty() As Boolean
+                Return count = 0
+            End Function
 
-        Public Function isFull()
-            Return count = capacity
-        End Function
+            Public Function isFull()
+                Return count = capacity
+            End Function
 
-        Public Sub Enqueue(item As T)
-            If isFull() Then
-                Throw New InvalidOperationException("Queue is full")
-            End If
+            Public Sub Enqueue(item As T)
+                If isFull() Then
+                    Throw New InvalidOperationException("Queue is full")
+                End If
 
-            rear = (rear + 1) Mod capacity
-            items(rear) = item
-            count += 1
-        End Sub
+                rear = (rear + 1) Mod capacity
+                items(rear) = item
+                count += 1
+            End Sub
 
-        Public Function Dequeue() As T
-            If IsEmpty() Then
-                Throw New InvalidOperationException("Queue is empty")
-            End If
+            Public Function Dequeue() As T
+                If IsEmpty() Then
+                    Throw New InvalidOperationException("Queue is empty")
+                End If
 
-            Dim value As T = items(front)
-            front = (front + 1) Mod capacity
-            count -= 1
+                Dim value As T = items(front)
+                front = (front + 1) Mod capacity
+                count -= 1
 
-            Return value
-        End Function
+                Return value
+            End Function
 
-        Public Function Peek() As T
-            If IsEmpty() Then
-                Throw New InvalidOperationException("Queue is empty")
-            End If
+            Public Function Peek() As T
+                If IsEmpty() Then
+                    Throw New InvalidOperationException("Queue is empty")
+                End If
 
-            Return items(front)
-        End Function
-        Public Sub Randomise()
-            For i = 0 To items.Count - 2
-                Dim j = rand.Next(i, items.Count)
-                Dim temp As T = items(i)
-                items(i) = items(j)
-                items(j) = temp
-            Next
-        End Sub
-    End Class
+                Return items(front)
+            End Function
+            Public Sub Randomise()
+                For i = 0 To items.Count - 2
+                    Dim j = rand.Next(i, items.Count)
+                    Dim temp As T = items(i)
+                    items(i) = items(j)
+                    items(j) = temp
+                Next
+            End Sub
+        End Class
 
 #End Region
 
@@ -1132,9 +1191,9 @@ Public Class Form1
 
 
 #Region "GameWindowSetup"
-    ' Set up the double buffer and Game Loop
-    ' You should not need to modify any of this code
-    Private backBuffer As Image
+        ' Set up the double buffer and Game Loop
+        ' You should not need to modify any of this code
+        Private backBuffer As Image
         Private bufferDisplay As Graphics
         Private graphicsDisplay As Graphics
         Private Shadows Sub Paint(ByVal g As Graphics)
