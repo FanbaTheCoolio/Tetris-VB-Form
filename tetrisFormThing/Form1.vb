@@ -415,6 +415,8 @@ Public Class Form1
     '    End Class
 
 
+#Region "Scenes"
+
 
     Interface InterfaceScene
         Sub Update(keys As Dictionary(Of Integer, Boolean))
@@ -422,7 +424,6 @@ Public Class Form1
 
         Sub HandleClick(mouseX As Integer, mouseY As Integer)
     End Interface
-
 
     MustInherit Class BaseScene
         Implements InterfaceScene
@@ -566,7 +567,7 @@ Public Class Form1
 #Region "Rendering / Layout"
 
         Private Const tileSize As Integer = 40
-
+        Private shouldDrawButtons As Boolean = True
         Private gridOffsetStartX As Integer
         Private Const gridOffsetStartY As Integer = 0
 
@@ -616,7 +617,14 @@ Public Class Form1
             Dim pauseButtonCentreY As Integer = GetRelativeY(0.05)
 
 
-            buttons.Add(New ImageButton(pauseButtonCentreX, pauseButtonCentreY, pauseButtonWidth, pauseButtonHeight, My.Resources.Resource1.Pause, Sub() manager.ChangeScene(New PauseScene(screenWidth, screenHeight, manager))))
+            buttons.Add(New ImageButton(
+                        pauseButtonCentreX,
+                        pauseButtonCentreY,
+                        pauseButtonWidth,
+                        pauseButtonHeight,
+                        My.Resources.Resource1.Pause,
+                        Sub() manager.ChangeScene(New PauseScene(screenWidth, screenHeight, manager, Me))
+                            ))
 
 
 
@@ -874,7 +882,6 @@ Public Class Form1
         Private Sub Hold()
 
         End Sub
-#End Region
 
         Public Overrides Sub HandleClick(mouseX As Integer, mouseY As Integer)
             For Each button In buttons
@@ -889,10 +896,18 @@ Public Class Form1
             DrawNextPiece(g)
             DrawScore(g)
 
-            For Each button In buttons
-                button.Draw(g, mouseX, mouseY)
-            Next
+            If shouldDrawButtons Then
+                For Each button In buttons
+                    button.Draw(g, mouseX, mouseY)
+                Next
+            End If
+
         End Sub
+
+        Public Sub SetShouldDrawButtons(shouldDrawButtons As Boolean)
+            Me.shouldDrawButtons = shouldDrawButtons
+        End Sub
+
         Private Sub RefillBag()
             For Each piece As TetrominoType In [Enum].GetValues(GetType(TetrominoType))
                 If piece <> TetrominoType.None Then
@@ -970,21 +985,63 @@ Public Class Form1
     End Class
     Class PauseScene
         Inherits BaseScene
-
-        Public Sub New(screenWidth As Integer, screenHeight As Integer, sceneManager As SceneManager)
+        Private previousScene As GameScene
+        Public Sub New(screenWidth As Integer, screenHeight As Integer, sceneManager As SceneManager, previousScene As GameScene)
             MyBase.New(screenWidth, screenHeight, sceneManager)
 
+            Me.previousScene = previousScene
+
+            Dim btnWidth = GetRelativeX(0.25)
+            Dim btnHeight = GetRelativeY(0.1)
+
+            Dim btnX = GetHorizontalCenter(btnWidth)
+            Dim btnY = GetVerticalCenter(btnHeight)
+
+            ' Resume button
+            buttons.Add(New TextButton(
+                btnX, btnY,
+                btnWidth, btnHeight,
+                "Resume",
+                Color.White,
+                Color.DarkGreen,
+                Color.Green,
+                Sub() manager.ChangeScene(previousScene)
+            ))
         End Sub
         Public Overrides Sub Update(keys As Dictionary(Of Integer, Boolean))
 
         End Sub
 
         Public Overrides Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer)
+            previousScene.SetShouldDrawButtons(False)
+            previousScene.Draw(g, mouseX, mouseY)
 
+            ' Dark overlay
+            Dim overlay As New SolidBrush(Color.FromArgb(150, Color.Black))
+            g.FillRectangle(overlay, 0, 0, screenWidth, screenHeight)
+
+            ' Pause text
+            Dim font As New Font("Consolas", 40, FontStyle.Bold)
+            Dim text = "PAUSED"
+            Dim size = g.MeasureString(text, font)
+
+            g.DrawString(text, font, Brushes.White,
+                (screenWidth - size.Width) / 2,
+                GetRelativeY(0.2)
+            )
+
+            ' Buttons
+            For Each b In buttons
+                b.Draw(g, mouseX, mouseY)
+            Next
+
+            previousScene.SetShouldDrawButtons(True)
         End Sub
 
         Public Overrides Sub HandleClick(mouseX As Integer, mouseY As Integer)
-
+            For Each b In buttons
+                b.HandleClick(mouseX, mouseY)
+            Next
         End Sub
     End Class
     Class GameOverScene
@@ -1005,6 +1062,7 @@ Public Class Form1
 
         End Sub
     End Class
+#End Region
     Public Structure Block
             Public X As Integer
             Public Y As Integer
@@ -1336,6 +1394,7 @@ Public Class Form1
             End Sub
         End Class
 
+#End Region
 
 
 
@@ -1416,7 +1475,7 @@ Public Class Form1
         Private Sub Form1_KeyUp(sender As Object, e As KeyEventArgs) Handles Me.KeyUp
             If KeyPressed.ContainsKey(e.KeyCode) Then
                 KeyPressed(e.KeyCode) = False
-            ' Cancel the key delay to allow an instant repress
+            ' Cancel the key delay to allow an instant repress (Should fix this)
             'KeyDelayCounter = KeyRepeatInterval
         Else
                 KeyPressed.Add(e.KeyCode, False)
