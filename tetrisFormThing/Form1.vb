@@ -20,13 +20,13 @@ Public Class Form1
     Public ApplicationName As String = "2D Gfx Framework"
     Public Shared DisplaySize As Size = New Size(800, 800)
     Public FrameInterval As Integer = 16 ' Time in milliseconds between each frame render. 16 milliseconds is approximately 60 FPS (Frames Per Second)
-    Public KeyRepeatInterval As Integer = 10 ' If a key is held down, this is the number of frames between each repeat. Set as 0 for no delay
+    ' If a key is held down, this is the number of frames between each repeat. Set as 0 for no delay
 
 
 #Region "Framework Variables"
     ' Framework Variables
     Public KeyPressed As Dictionary(Of Integer, Boolean) = New Dictionary(Of Integer, Boolean)
-    Public KeyDelayCounter As Integer
+
     Public MouseLeftClicked As Boolean = False ' Has the left mouse button been clicked?
     Public MouseRightClicked As Boolean = False ' Has the right mouse button been clicked?
     Public MouseLeftDown As Boolean = False ' Is the left mouse button currently down?
@@ -45,6 +45,16 @@ Public Class Form1
 
 
     Dim currentSceneManager As SceneManager
+
+    Enum KeyCode
+        LeftArrow = 37
+        RightArrow = 39
+        Space = 32
+        R = 82
+        Q = 81
+        A = 65
+        D = 68
+    End Enum
     Enum PlayerAction
         LeftRotation
         RightRotation
@@ -90,7 +100,7 @@ Public Class Form1
 
 #Region "Game Load"
     Private Sub GameLoad()
-        KeyDelayCounter = 0
+
         ' **********************************************************************
         ' ** The code below will run once when the application loads / starts **
         ' **********************************************************************
@@ -109,7 +119,7 @@ Public Class Form1
     Private Sub GameUpdate()
 
 
-        currentSceneManager.Update()
+        currentSceneManager.Update(KeyPressed)
 
 
 #Region "Check Keys"
@@ -119,101 +129,7 @@ Public Class Form1
 
         ' Up
 
-        If currentSceneManager.IsSoftDropReady Then
-            If KeyPressed.ContainsKey(32) Then
-                If KeyPressed(32) Then
-                    currentSceneManager.HandleAction(PlayerAction.SoftDrop)
-                End If
-            End If
-        Else
-            currentSceneManager.IncrementSoftDropCounter()
-        End If
 
-        If KeyDelayCounter = KeyRepeatInterval Then
-
-            If KeyPressed.ContainsKey(81) Then
-                If KeyPressed(81) Then
-                    currentSceneManager.HandleAction(PlayerAction.LeftRotation)
-                    KeyDelayCounter = 0
-                End If
-            End If
-
-            If KeyPressed.ContainsKey(82) Then
-                If KeyPressed(82) Then
-                    currentSceneManager.HandleAction(PlayerAction.RightRotation)
-                    KeyDelayCounter = 0
-                End If
-            End If
-
-
-            If KeyPressed.ContainsKey(72) Then
-                If KeyPressed(72) Then
-                    currentSceneManager.HandleAction(PlayerAction.Hold)
-                    KeyDelayCounter = 0
-                End If
-            End If
-
-
-            If KeyPressed.ContainsKey(37) Then
-                If KeyPressed(37) Then
-                    ' *********************************************************
-                    ' ** The code below runs when the LEFT (37) key is pressed **
-                    ' *********************************************************
-
-                    currentSceneManager.HandleAction(PlayerAction.LeftMovement)
-
-                    ' *********************************************************
-                    ' ** The code above runs when the LEFT (37) key is pressed **
-                    ' *********************************************************
-                    KeyDelayCounter = 0
-                End If
-            End If
-
-            If KeyPressed.ContainsKey(65) Then
-                If KeyPressed(65) Then
-                    ' *********************************************************
-                    ' ** The code below runs when the A (65) key is pressed **
-                    ' *********************************************************
-
-                    currentSceneManager.HandleAction(PlayerAction.LeftMovement)
-
-                    ' *********************************************************
-                    ' ** The code above runs when the A (65) key is pressed **
-                    ' *********************************************************
-                    KeyDelayCounter = 0
-                End If
-            End If
-            If KeyPressed.ContainsKey(39) Then
-                If KeyPressed(39) Then
-                    ' *********************************************************
-                    ' ** The code below runs when the RIGHT (39) key is pressed **
-                    ' *********************************************************
-                    currentSceneManager.HandleAction(PlayerAction.RightMovement)
-                    ' *********************************************************
-                    ' ** The code above runs when the RIGHT (39) key is pressed **
-                    ' *********************************************************
-                    KeyDelayCounter = 0
-                End If
-            End If
-
-
-            If KeyPressed.ContainsKey(68) Then
-                If KeyPressed(68) Then
-                    ' *********************************************************
-                    ' ** The code below runs when the D (68) key is pressed **
-                    ' *********************************************************
-                    currentSceneManager.HandleAction(PlayerAction.RightMovement)
-                    ' *********************************************************
-                    ' ** The code above runs when the D (68) key is pressed **
-                    ' *********************************************************
-                    KeyDelayCounter = 0
-                End If
-            End If
-
-        Else
-
-            KeyDelayCounter = KeyDelayCounter + 1
-        End If
 #End Region
 
 
@@ -222,9 +138,8 @@ Public Class Form1
             ' *****************************************************************
             ' ** The code below is run when the left mouse button is CLICKED **
             ' *****************************************************************
+            currentSceneManager.HandleClick(MouseX, MouseY)
 
-
-            currentSceneManager.HandleClicks(MouseX, MouseY)
             ' *****************************************************************
             ' ** The code above is run when the left mouse button is CLICKED **
             ' *****************************************************************
@@ -289,57 +204,296 @@ Public Class Form1
 
 
 #Region "User Defined Classes"
+
     Class SceneManager
-#Region "States & Fields"
-        Private board(gridWidth, gridHeight) As TetrominoType
-        Private gameScore As Integer = 0
-        Private softDropDebounce = False
-        Private currentTetromino As Tetromino
-        Private tetrominoBag As New Queue(Of TetrominoType)(7)
-        Private tetrominoDelayCounter As Integer = 0
-        Private currentGameState As GameState
+        Private currentScene As InterfaceScene
         Private screenWidth, screenHeight As Integer
-        Private borderColor As Color = Color.RebeccaPurple
-        Private softDropCounter As Integer = 0
-
-        Private stateButtons As New Dictionary(Of GameState, List(Of BaseButton))
-
-        Private gridOffsetStartX As Integer '= ClientSize.Width * 0.85
-        Private Const gridOffsetStartY As Integer = 0
-        Private scoreXPosition As Integer
-        Private scoreYPosition As Integer
-        Private Const scoreSpacing As Integer = tileSize \ 2
-        Private Const previewSpacing As Integer = tileSize \ 2
-        Private Const tileSize As Integer = 40
-        Private Const gridHeight As Integer = 18
-        Private Const gridWidth As Integer = 8
-        Private Const tetrominoCounterIncrement As Integer = 1
-        Private Const tetrominoUpdateInterval As Integer = 30
-        Private Const softDropInterval As Integer = 5
-        Private Const previewBoxSize As Integer = 4
-        Private previewAnchorX As Integer
-        Private previewAnchorY As Integer
-
-        Private heldPiece As TetrominoType = TetrominoType.None
-        Private hasHeldThisTurn As Boolean = False
-#End Region
-
-
-
-#Region "Initialisation & Game State"
         Public Sub New(screenWidth As Integer, screenHeight As Integer)
-            stateButtons = New Dictionary(Of GameState, List(Of BaseButton)) From {
-    {GameState.StartMenu, New List(Of BaseButton)},
-    {GameState.Ingame, New List(Of BaseButton)},
-    {GameState.Pause, New List(Of BaseButton)},
-    {GameState.GameOver, New List(Of BaseButton)}
-}
+            Me.screenHeight = screenHeight
+            Me.screenWidth = screenWidth
+
+            currentScene = New StartScene(screenWidth, screenHeight, Me)
+        End Sub
+
+        Public Sub ChangeScene(newScene As InterfaceScene)
+            currentScene = newScene
+        End Sub
+
+        Public Sub Update(keys As Dictionary(Of Integer, Boolean))
+            currentScene.Update(keys)
+        End Sub
+        Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer)
+            currentScene.Draw(g, mouseX, mouseY)
+        End Sub
+
+        Public Sub HandleClick(mouseX As Integer, mouseY As Integer)
+            currentScene.HandleClick(mouseX, mouseY)
+        End Sub
+
+        Public Shared Function GetTetrominoColour(value As TetrominoType) As Color
+            Select Case value
+                Case TetrominoType.I_Piece
+                    Return Color.Cyan
+                Case TetrominoType.O_Piece
+                    Return Color.Yellow
+                Case TetrominoType.T_Piece
+                    Return Color.Purple
+                Case TetrominoType.L_Piece
+                    Return Color.Orange
+                Case TetrominoType.J_Piece
+                    Return Color.Blue
+                Case TetrominoType.S_Piece
+                    Return Color.Green
+                Case TetrominoType.Z_Piece
+                    Return Color.Red
+                Case TetrominoType.None
+                    Return Color.Black
+                Case Else
+                    Return Color.Black
+            End Select
+        End Function
+    End Class
+    '    Class SceneManager
+    '#Region "States & Fields"
+    '        Private currentScene As BaseScene
+    '       
+
+
+    '        Private stateButtons As New Dictionary(Of GameState, List(Of BaseButton))
+
+
+    '#End Region
+
+
+
+    '#Region "Initialisation & Game State"
+    '        Public Sub New(screenWidth As Integer, screenHeight As Integer)
+    '            stateButtons = New Dictionary(Of GameState, List(Of BaseButton)) From {
+    '    {GameState.StartMenu, New List(Of BaseButton)},
+    '    {GameState.Ingame, New List(Of BaseButton)},
+    '    {GameState.Pause, New List(Of BaseButton)},
+    '    {GameState.GameOver, New List(Of BaseButton)}
+    '}
+    '            Me.screenWidth = screenWidth
+    '            Me.screenHeight = screenHeight
+
+
+    '        End Sub
+    '        Private Sub changeScene()
+
+    '        End Sub
+    '        Private Sub InitialiseGame()
+    '           
+    '        End Sub
+
+    '        Private Sub ChangeGameState(newGameState As GameState)
+    '            Select Case newGameState
+    '                Case GameState.StartMenu
+    '                    currentGameState = newGameState
+    '                Case GameState.Ingame
+    '                    currentGameState = newGameState
+    '                Case GameState.GameOver
+    '                    currentGameState = newGameState
+    '                Case GameState.Pause
+    '                    currentGameState = newGameState
+    '            End Select
+    '        End Sub
+
+    '#End Region
+
+    '#Region "Game Loop Logic"
+    '    Public Sub Update()
+    '            Select Case currentGameState
+    '                Case GameState.Ingame
+    '                    UpdateIngameState()
+    '                Case GameState.StartMenu
+
+    '            End Select
+    '        End Sub
+    '      
+    '        Private Sub UpdateIngameState()
+    '            
+    '        End Sub
+
+    '        Public Function IsSoftDropReady()
+    '            Return softDropCounter >= softDropInterval
+
+    '        End Function
+    '        Public Sub IncrementSoftDropCounter()
+    '            softDropCounter += 1
+    '        End Sub
+    '#End Region
+
+    '#Region "Core Game Mechanics"
+    '       
+    '        Private Sub SoftDrop()
+    '            softDropDebounce = True
+    '            softDropCounter = 0
+    '        End Sub
+
+    '#Region "Movement And Rotation"
+    '        Public Sub HandleAction(action As PlayerAction)
+
+    '            If currentGameState <> GameState.Ingame Then Return
+
+    '            Select Case action
+    '                Case PlayerAction.LeftMovement
+    '                    AttemptLeftMovement()
+    '                Case PlayerAction.RightMovement
+    '                    AttemptRightMovement()
+    '                Case PlayerAction.LeftRotation
+    '                    AttemptLeftRotation()
+    '                Case PlayerAction.RightRotation
+    '                    AttemptRightRotation()
+    '                Case PlayerAction.SoftDrop
+    '                    SoftDrop()
+    '                Case Else
+    '                    Throw New ArgumentOutOfRangeException(NameOf(action))
+    '            End Select
+    '        End Sub
+    '       
+
+    '#Region "UI And Input Handling"
+    '        Public Sub HandleClicks(mouseX As Integer, mouseY As Integer)
+    '            If Not stateButtons.ContainsKey(currentGameState) Then Return
+
+    '            For Each button In stateButtons(currentGameState)
+    '                button.HandleClick(mouseX, mouseY)
+    '            Next
+    '        End Sub
+    '#End Region
+
+    '#Region "Rendering"
+    '        Public Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer)
+    '            Select Case currentGameState
+    '                Case GameState.Ingame
+    '                    DrawIngameState(g, mouseX, mouseY)
+    '                Case GameState.StartMenu
+    '                    DrawStartState(g, mouseX, mouseY)
+    '                Case GameState.Pause
+    '                    DrawPauseState(g, mouseX, mouseY)
+    '                Case GameState.GameOver
+    '                    DrawGameOverState(g, mouseX, mouseY)
+    '            End Select
+    '        End Sub
+
+
+
+    '        Private Sub DrawButtons(g As Graphics, mouseX As Integer, mouseY As Integer)
+    '            For Each button In stateButtons(currentGameState)
+    '                button.Draw(g, mouseX, mouseY)
+    '            Next
+    '        End Sub
+    '        Private Sub DrawStartState(g As Graphics, mouseX As Integer, mouseY As Integer)
+    '           
+    '        End Sub
+
+    '        Private Sub DrawGameOverState(g As Graphics, mouseX As Integer, mouseY As Integer)
+    '            g.Clear(Color.Black)
+
+    '            DrawButtons(g, mouseX, mouseY)
+    '        End Sub
+    '        Private Sub DrawPauseState(g As Graphics, mouseX As Integer, mouseY As Integer)
+    '            g.Clear(Color.Black)
+    '            DrawBorders(g)
+    '            DrawLockedPieces(g)
+    '            DrawCurrentPiece(g)
+    '            DrawNextPiece(g)
+    '            DrawScore(g)
+
+    '            DrawButtons(g, mouseX, mouseY)
+
+    '        End Sub
+    '        Private Sub DrawIngameState(g As Graphics, mouseX As Integer, mouseY As Integer)
+    '           
+    '        End Sub
+    '       
+
+    '#End Region
+
+    '#Region "Layout & Helper Functions"
+
+    '#End Region
+
+    '    End Class
+
+
+
+    Interface InterfaceScene
+        Sub Update(keys As Dictionary(Of Integer, Boolean))
+        Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer)
+
+        Sub HandleClick(mouseX As Integer, mouseY As Integer)
+    End Interface
+
+
+    MustInherit Class BaseScene
+        Implements InterfaceScene
+        Protected manager As SceneManager
+        Protected buttons As New List(Of BaseButton)
+        Protected screenWidth, screenHeight As Integer
+
+        Public Sub New(screenWidth As Integer, screenHeight As Integer, manager As SceneManager)
             Me.screenWidth = screenWidth
             Me.screenHeight = screenHeight
-            gridOffsetStartX = (screenWidth - (tileSize * gridWidth) - tileSize) / 2
+            Me.manager = manager
+        End Sub
 
-            previewAnchorX = ((gridOffsetStartX + ((gridWidth)) * tileSize) + (tileSize * 2))
-            previewAnchorY = tileSize * 2
+        Public MustOverride Sub Update(keys As Dictionary(Of Integer, Boolean)) Implements InterfaceScene.Update
+
+        Public MustOverride Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer) Implements InterfaceScene.Draw
+
+        Public MustOverride Sub HandleClick(mouseX As Integer, mouseY As Integer) Implements InterfaceScene.HandleClick
+
+        Protected Function GetHorizontalCenter(width As Integer) As Integer
+            Return (screenWidth - width) \ 2
+        End Function
+
+        Protected Function GetVerticalCenter(height As Integer) As Integer
+            Return (screenHeight - height) \ 2
+        End Function
+
+        Protected Function GetRelativeX(percent As Double) As Integer
+            Return CInt(screenWidth * percent)
+        End Function
+
+        Protected Function GetRelativeY(percent As Double) As Integer
+            Return CInt(screenHeight * percent)
+        End Function
+
+
+        Protected Function getMinimumRelativePositionX(previewTetromino As Tetromino) As Integer
+            Dim minimumRelativePosition As Integer = 0
+            For Each relativePosition In previewTetromino.getBlockRelativePositions
+                Dim x = relativePosition.X
+
+                If x < minimumRelativePosition Then
+                    minimumRelativePosition = x
+                End If
+
+
+            Next
+            Return minimumRelativePosition
+        End Function
+
+        Protected Function getMaximumRelativePositionX(previewTetromino As Tetromino) As Integer
+            Dim maximumRelativePosition As Integer = 0
+            For Each relativePosition In previewTetromino.getBlockRelativePositions
+                Dim x = relativePosition.X
+
+                If x > maximumRelativePosition Then
+                    maximumRelativePosition = x
+                End If
+
+
+            Next
+            Return maximumRelativePosition
+        End Function
+    End Class
+    Class StartScene
+        Inherits BaseScene
+        Public Sub New(screenWidth As Integer, screenHeight As Integer, sceneManager As SceneManager)
+            MyBase.New(screenWidth, screenHeight, sceneManager)
 
             Dim startButtonWidth As Integer = GetRelativeX(0.25)
             Dim startButtonHeight As Integer = GetRelativeY(0.1)
@@ -348,29 +502,101 @@ Public Class Form1
             Dim startButtonYPosition As Integer = GetVerticalCenter(startButtonHeight)
 
 
-            stateButtons(GameState.StartMenu).Add(New TextButton(startButtonXPosition, startButtonYPosition, startButtonWidth, startButtonHeight, "Start", Color.Black, Color.Blue, Color.DarkBlue, Sub() InitialiseGame()))
-
-
-            Dim pauseButtonWidth As Integer = GetRelativeX(0.2)
-            Dim pauseButtonHeight As Integer = GetRelativeY(0.08)
-
-            Dim pauseButtonCentreX As Integer = GetRelativeX(0.05)
-            Dim pauseButtonCentreY As Integer = GetRelativeY(0.05)
-
-
-            stateButtons(GameState.Ingame).Add(New ImageButton(pauseButtonCentreX, pauseButtonCentreY, pauseButtonWidth, pauseButtonHeight, My.Resources.Resource1.Pause, Sub() ChangeGameState(GameState.Pause)))
-            stateButtons(GameState.Pause).Add(New ImageButton(pauseButtonCentreX, pauseButtonCentreY, pauseButtonWidth, pauseButtonHeight, My.Resources.Resource1.Play, Sub() ChangeGameState(GameState.Ingame)))
-
-
-            scoreXPosition = pauseButtonCentreX
-            scoreYPosition = pauseButtonCentreY + (pauseButtonHeight + scoreSpacing)
+            buttons.Add(New TextButton(startButtonXPosition, startButtonYPosition, startButtonWidth, startButtonHeight, "Start", Color.Black, Color.Blue, Color.DarkBlue, Sub() sceneManager.ChangeScene(New GameScene(screenWidth, screenHeight, sceneManager))))
+        End Sub
+        Public Overrides Sub Update(keys As Dictionary(Of Integer, Boolean))
 
         End Sub
 
-        Private Sub InitialiseGame()
+        Public Overrides Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer)
+            g.Clear(Color.Black)
+
+            For Each button In buttons
+                button.Draw(g, mouseX, mouseY)
+            Next
+        End Sub
+
+        Public Overrides Sub HandleClick(mouseX As Integer, mouseY As Integer)
+            For Each button In buttons
+                button.HandleClick(mouseX, mouseY)
+            Next
+        End Sub
+    End Class
+    Class GameScene
+        Inherits BaseScene
+#Region "Grid / Board"
+
+        Private Const gridWidth As Integer = 8
+        Private Const gridHeight As Integer = 18
+        Private board(gridWidth, gridHeight) As TetrominoType
+
+#End Region
+
+
+#Region "Tetromino System"
+
+        Private currentTetromino As Tetromino
+        Private tetrominoBag As New Queue(Of TetrominoType)(7)
+
+        Private Const tetrominoUpdateInterval As Integer = 30
+        Private Const tetrominoCounterIncrement As Integer = 1
+        Private tetrominoDelayCounter As Integer = 0
+
+#End Region
+
+
+#Region "Input Handling"
+
+        Private KeyRepeatInterval As Integer = 10
+        Private KeyDelayCounter As Integer = 0
+
+        Private softDropDebounce As Boolean = False
+        Private softDropCounter As Integer = 0
+        Private Const softDropInterval As Integer = 5
+
+#End Region
+
+
+#Region "Game State"
+
+        Private gameScore As Integer = 0
+        Private heldPiece As TetrominoType = TetrominoType.None
+        Private hasHeldThisTurn As Boolean = False
+
+#End Region
+
+
+#Region "Rendering / Layout"
+
+        Private Const tileSize As Integer = 40
+
+        Private gridOffsetStartX As Integer
+        Private Const gridOffsetStartY As Integer = 0
+
+        Private borderColor As Color = Color.RebeccaPurple
+
+#End Region
+
+
+#Region "UI / HUD"
+
+        Private scoreXPosition As Integer
+        Private scoreYPosition As Integer
+
+        Private Const scoreSpacing As Integer = tileSize \ 2
+        Private Const previewSpacing As Integer = tileSize \ 2
+
+        Private Const previewBoxSize As Integer = 4
+        Private previewAnchorX As Integer
+        Private previewAnchorY As Integer
+
+#End Region
+        Public Sub New(screenWidth As Integer, screenHeight As Integer, sceneManager As SceneManager)
+            MyBase.New(screenWidth, screenHeight, sceneManager)
+
             Randomize()
             RefillBag()
-
+            KeyDelayCounter = 0
             currentTetromino = New Tetromino(tetrominoBag.Dequeue)
 
 
@@ -381,52 +607,15 @@ Public Class Form1
                 Next
             Next
 
-            ChangeGameState(GameState.Ingame)
+
         End Sub
 
-        Private Sub ChangeGameState(newGameState As GameState)
-            Select Case newGameState
-                Case GameState.StartMenu
-                    currentGameState = newGameState
-                Case GameState.Ingame
-                    currentGameState = newGameState
-                Case GameState.GameOver
-                    currentGameState = newGameState
-                Case GameState.Pause
-                    currentGameState = newGameState
-            End Select
+
+        Public Overrides Sub Update(keys As Dictionary(Of Integer, Boolean))
+            handleInput(keys)
+            GameUpdate()
         End Sub
-
-#End Region
-
-#Region "Game Loop Logic"
-        Public Sub Update()
-            Select Case currentGameState
-                Case GameState.Ingame
-                    UpdateIngameState()
-                Case GameState.StartMenu
-
-            End Select
-        End Sub
-        Private Function IsGameOver(upcomingPiece As TetrominoType) As Boolean
-            Dim upcomingTetromino As New Tetromino(upcomingPiece)
-            For Each relativePosition In currentTetromino.getBlockRelativePositions
-                Dim brickXPosition = upcomingTetromino.GetXPosition + relativePosition.X
-                Dim brickYPosition = upcomingTetromino.GetYPosition + relativePosition.Y
-
-                Dim yPosCondition As Boolean = (brickYPosition >= 0 And brickYPosition <= gridHeight)
-
-                If yPosCondition Then
-                    If board(brickXPosition, brickYPosition) <> TetrominoType.None Then
-                        Debug.WriteLine(brickXPosition & " " & brickYPosition)
-                        Return True
-                    End If
-                End If
-            Next
-
-            Return False
-        End Function
-        Private Sub UpdateIngameState()
+        Private Sub GameUpdate()
             tetrominoDelayCounter += 1
 
             If tetrominoDelayCounter >= tetrominoUpdateInterval Or softDropDebounce Then
@@ -447,140 +636,108 @@ Public Class Form1
                 tetrominoDelayCounter = 0
             End If
         End Sub
+        Private Sub handleInput(keys As Dictionary(Of Integer, Boolean))
+            'If currentSceneManager.IsSoftDropReady Then
+            '    If KeyPressed.ContainsKey(32) Then
+            '        If KeyPressed(32) Then
+            '            currentSceneManager.HandleAction(PlayerAction.SoftDrop)
+            '        End If
+            '    End If
+            'Else
+            '    currentSceneManager.IncrementSoftDropCounter()
+            'End If
 
-        Public Function IsSoftDropReady()
-            Return softDropCounter >= softDropInterval
+            If KeyDelayCounter = KeyRepeatInterval Then
 
-        End Function
-        Public Sub IncrementSoftDropCounter()
-            softDropCounter += 1
-        End Sub
-#End Region
+                If keys.ContainsKey(KeyCode.Q) AndAlso keys(KeyCode.Q) Then
 
-#Region "Core Game Mechanics"
-        Private Function ShouldBeLocked()
-
-
-            For Each relativePosition In currentTetromino.getBlockRelativePositions
-                Dim brickXPosition = currentTetromino.GetXPosition + relativePosition.X
-                Dim brickYPosition = currentTetromino.GetYPosition + relativePosition.Y
-                If brickYPosition < gridHeight Then
-                    If board(brickXPosition, brickYPosition + 1) <> TetrominoType.None Then
-                        Return True
-                    End If
                 End If
-                If brickYPosition >= (gridHeight) Then
-                    Return True
-                End If
-            Next
-            Return False
-        End Function
-        Private Sub SoftDrop()
-            softDropDebounce = True
-            softDropCounter = 0
-        End Sub
-        Private Sub LockPiece()
-            For Each relativePosition In currentTetromino.getBlockRelativePositions
-                Dim brickXPosition = currentTetromino.GetXPosition + relativePosition.X
-                Dim brickYPosition = currentTetromino.GetYPosition + relativePosition.Y
-
-                board(brickXPosition, brickYPosition) = currentTetromino.GetShapeType
-            Next
-            ClearLines()
-
-
-            Dim upcomingPiece As TetrominoType = tetrominoBag.Peek
-            Debug.WriteLine("Mew")
-            If IsGameOver(upcomingPiece) Then
-                Debug.WriteLine("Mew2")
-                ChangeGameState(GameState.GameOver)
             Else
-                currentTetromino = New Tetromino(tetrominoBag.Dequeue)
+                KeyDelayCounter += 1
             End If
+            '    If KeyPressed.ContainsKey(81) Then
+            '            If KeyPressed(81) Then
+            '                currentSceneManager.HandleAction(PlayerAction.LeftRotation)
+            '                KeyDelayCounter = 0
+            '            End If
+            '        End If
+
+            '        If KeyPressed.ContainsKey(82) Then
+            '            If KeyPressed(82) Then
+            '                currentSceneManager.HandleAction(PlayerAction.RightRotation)
+            '                KeyDelayCounter = 0
+            '            End If
+            '        End If
 
 
-            If tetrominoBag.IsEmpty Then
-                RefillBag()
-            End If
-
-            hasHeldThisTurn = False
-        End Sub
-        Private Sub ClearLines()
-            'Dim positionOfLinesToBeCleared As New List(Of Integer)
+            '        If KeyPressed.ContainsKey(72) Then
+            '            If KeyPressed(72) Then
+            '                currentSceneManager.HandleAction(PlayerAction.Hold)
+            '                KeyDelayCounter = 0
+            '            End If
+            '        End If
 
 
-            For y As Integer = 0 To gridHeight
-                Dim isLineClear As Boolean = True
-                For x As Integer = 0 To gridWidth
-                    If board(x, y) = TetrominoType.None Then
-                        isLineClear = False
-                        Exit For
-                    End If
-                Next
-                If isLineClear Then
-                    Debug.WriteLine(y)
-                    'positionOfLinesToBeCleared.Add(y)
-                    gameScore += 50
-                    For lineClearingX As Integer = 0 To gridWidth
-                        board(lineClearingX, y) = TetrominoType.None
+            '        If KeyPressed.ContainsKey(37) Then
+            '            If KeyPressed(37) Then
+            '                ' *********************************************************
+            '                ' ** The code below runs when the LEFT (37) key is pressed **
+            '                ' *********************************************************
 
-                    Next
-                    For gravityY As Integer = (y - 1) To 0 Step -1
-                        For gravityX As Integer = 0 To gridWidth
-                            board(gravityX, gravityY + 1) = board(gravityX, gravityY)
+            '                currentSceneManager.HandleAction(PlayerAction.LeftMovement)
 
-                        Next
-                    Next
+            '                ' *********************************************************
+            '                ' ** The code above runs when the LEFT (37) key is pressed **
+            '                ' *********************************************************
+            '                KeyDelayCounter = 0
+            '            End If
+            '        End If
 
-                End If
-            Next
-        End Sub
-        Private Sub RefillBag()
-            For Each piece As TetrominoType In [Enum].GetValues(GetType(TetrominoType))
-                If piece <> TetrominoType.None Then
-                    tetrominoBag.Enqueue(piece)
-                End If
-            Next
-            tetrominoBag.Randomise()
-        End Sub
-        Private Function IsValidPosition(newX As Integer, newY As Integer) As Boolean
-            Dim xPosCondition As Boolean = (newX >= 0 And newX <= gridWidth)
-            Dim yPosCondition As Boolean = (newY >= 0 And newY <= gridHeight)
+            '        If KeyPressed.ContainsKey(65) Then
+            '            If KeyPressed(65) Then
+            '                ' *********************************************************
+            '                ' ** The code below runs when the A (65) key is pressed **
+            '                ' *********************************************************
+
+            '                currentSceneManager.HandleAction(PlayerAction.LeftMovement)
+
+            '                ' *********************************************************
+            '                ' ** The code above runs when the A (65) key is pressed **
+            '                ' *********************************************************
+            '                KeyDelayCounter = 0
+            '            End If
+            '        End If
+            '        If KeyPressed.ContainsKey(39) Then
+            '            If KeyPressed(39) Then
+            '                ' *********************************************************
+            '                ' ** The code below runs when the RIGHT (39) key is pressed **
+            '                ' *********************************************************
+            '                currentSceneManager.HandleAction(PlayerAction.RightMovement)
+            '                ' *********************************************************
+            '                ' ** The code above runs when the RIGHT (39) key is pressed **
+            '                ' *********************************************************
+            '                KeyDelayCounter = 0
+            '            End If
+            '        End If
 
 
+            '        If KeyPressed.ContainsKey(68) Then
+            '            If KeyPressed(68) Then
+            '                ' *********************************************************
+            '                ' ** The code below runs when the D (68) key is pressed **
+            '                ' *********************************************************
+            '                currentSceneManager.HandleAction(PlayerAction.RightMovement)
+            '                ' *********************************************************
+            '                ' ** The code above runs when the D (68) key is pressed **
+            '                ' *********************************************************
+            '                KeyDelayCounter = 0
+            '            End If
+            '        End If
 
-            If xPosCondition And yPosCondition Then
-                Dim isSpotClear As Boolean = (board(newX, newY) = TetrominoType.None)
-                If isSpotClear Then
-                    Return True
-                End If
-            End If
-            Return False
-        End Function
-        Private Sub Hold()
+            '    Else
 
-        End Sub
-#End Region
-
-#Region "Movement And Rotation"
-        Public Sub HandleAction(action As PlayerAction)
-
-            If currentGameState <> GameState.Ingame Then Return
-
-            Select Case action
-                Case PlayerAction.LeftMovement
-                    AttemptLeftMovement()
-                Case PlayerAction.RightMovement
-                    AttemptRightMovement()
-                Case PlayerAction.LeftRotation
-                    AttemptLeftRotation()
-                Case PlayerAction.RightRotation
-                    AttemptRightRotation()
-                Case PlayerAction.SoftDrop
-                    SoftDrop()
-                Case Else
-                    Throw New ArgumentOutOfRangeException(NameOf(action))
-            End Select
+            '        KeyDelayCounter = KeyDelayCounter + 1
+            'End If
         End Sub
         Private Sub AttemptLeftMovement()
             Dim canMoveLeft As Boolean = True
@@ -652,70 +809,141 @@ Public Class Form1
             End If
         End Sub
 
+        Private Function ShouldBeLocked()
+            For Each relativePosition In currentTetromino.getBlockRelativePositions
+                Dim brickXPosition = currentTetromino.GetXPosition + relativePosition.X
+                Dim brickYPosition = currentTetromino.GetYPosition + relativePosition.Y
+                If brickYPosition < gridHeight Then
+                    If board(brickXPosition, brickYPosition + 1) <> TetrominoType.None Then
+                        Return True
+                    End If
+                End If
+                If brickYPosition >= (gridHeight) Then
+                    Return True
+                End If
+            Next
+            Return False
+        End Function
+        Private Function IsGameOver(upcomingPiece As TetrominoType) As Boolean
+            Dim upcomingTetromino As New Tetromino(upcomingPiece)
+            For Each relativePosition In currentTetromino.getBlockRelativePositions
+                Dim brickXPosition = upcomingTetromino.GetXPosition + relativePosition.X
+                Dim brickYPosition = upcomingTetromino.GetYPosition + relativePosition.Y
+
+                Dim yPosCondition As Boolean = (brickYPosition >= 0 And brickYPosition <= gridHeight)
+
+                If yPosCondition Then
+                    If board(brickXPosition, brickYPosition) <> TetrominoType.None Then
+                        Debug.WriteLine(brickXPosition & " " & brickYPosition)
+                        Return True
+                    End If
+                End If
+            Next
+
+            Return False
+        End Function
+        Private Sub LockPiece()
+            For Each relativePosition In currentTetromino.getBlockRelativePositions
+                Dim brickXPosition = currentTetromino.GetXPosition + relativePosition.X
+                Dim brickYPosition = currentTetromino.GetYPosition + relativePosition.Y
+
+                board(brickXPosition, brickYPosition) = currentTetromino.GetShapeType
+            Next
+            ClearLines()
+
+
+            Dim upcomingPiece As TetrominoType = tetrominoBag.Peek
+            Debug.WriteLine("Mew")
+            If IsGameOver(upcomingPiece) Then
+
+                ' change this
+                manager.ChangeScene(New GameOverScene(screenWidth, screenHeight, manager))
+
+            Else
+                currentTetromino = New Tetromino(tetrominoBag.Dequeue)
+            End If
+
+
+            If tetrominoBag.IsEmpty Then
+                RefillBag()
+            End If
+
+            hasHeldThisTurn = False
+        End Sub
+        Private Sub ClearLines()
+            'Dim positionOfLinesToBeCleared As New List(Of Integer)
+
+
+            For y As Integer = 0 To gridHeight
+                Dim isLineClear As Boolean = True
+                For x As Integer = 0 To gridWidth
+                    If board(x, y) = TetrominoType.None Then
+                        isLineClear = False
+                        Exit For
+                    End If
+                Next
+                If isLineClear Then
+                    Debug.WriteLine(y)
+                    'positionOfLinesToBeCleared.Add(y)
+                    gameScore += 50
+                    For lineClearingX As Integer = 0 To gridWidth
+                        board(lineClearingX, y) = TetrominoType.None
+
+                    Next
+                    For gravityY As Integer = (y - 1) To 0 Step -1
+                        For gravityX As Integer = 0 To gridWidth
+                            board(gravityX, gravityY + 1) = board(gravityX, gravityY)
+
+                        Next
+                    Next
+
+                End If
+            Next
+        End Sub
+
+        Private Function IsValidPosition(newX As Integer, newY As Integer) As Boolean
+            Dim xPosCondition As Boolean = (newX >= 0 And newX <= gridWidth)
+            Dim yPosCondition As Boolean = (newY >= 0 And newY <= gridHeight)
+
+
+
+            If xPosCondition And yPosCondition Then
+                Dim isSpotClear As Boolean = (board(newX, newY) = TetrominoType.None)
+                If isSpotClear Then
+                    Return True
+                End If
+            End If
+            Return False
+        End Function
+        Private Sub Hold()
+
+        End Sub
 #End Region
 
-#Region "UI And Input Handling"
-        Public Sub HandleClicks(mouseX As Integer, mouseY As Integer)
-            If Not stateButtons.ContainsKey(currentGameState) Then Return
-
-            For Each button In stateButtons(currentGameState)
+        Public Overrides Sub HandleClick(mouseX As Integer, mouseY As Integer)
+            For Each button In buttons
                 button.HandleClick(mouseX, mouseY)
             Next
         End Sub
-#End Region
+        Public Overrides Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer)
+            g.Clear(Color.Black)
+            DrawBorders(g)
+            DrawLockedPieces(g)
+            DrawCurrentPiece(g)
+            DrawNextPiece(g)
+            DrawScore(g)
 
-#Region "Rendering"
-        Public Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer)
-            Select Case currentGameState
-                Case GameState.Ingame
-                    DrawIngameState(g, mouseX, mouseY)
-                Case GameState.StartMenu
-                    DrawStartState(g, mouseX, mouseY)
-                Case GameState.Pause
-                    DrawPauseState(g, mouseX, mouseY)
-                Case GameState.GameOver
-                    DrawGameOverState(g, mouseX, mouseY)
-            End Select
-        End Sub
-
-
-
-        Private Sub DrawButtons(g As Graphics, mouseX As Integer, mouseY As Integer)
-            For Each button In stateButtons(currentGameState)
+            For Each button In buttons
                 button.Draw(g, mouseX, mouseY)
             Next
         End Sub
-        Private Sub DrawStartState(g As Graphics, mouseX As Integer, mouseY As Integer)
-            g.Clear(Color.Black)
-
-            DrawButtons(g, mouseX, mouseY)
-        End Sub
-
-        Private Sub DrawGameOverState(g As Graphics, mouseX As Integer, mouseY As Integer)
-            g.Clear(Color.Black)
-
-            DrawButtons(g, mouseX, mouseY)
-        End Sub
-        Private Sub DrawPauseState(g As Graphics, mouseX As Integer, mouseY As Integer)
-            g.Clear(Color.Black)
-            DrawBorders(g)
-            DrawLockedPieces(g)
-            DrawCurrentPiece(g)
-            DrawNextPiece(g)
-            DrawScore(g)
-
-            DrawButtons(g, mouseX, mouseY)
-
-        End Sub
-        Private Sub DrawIngameState(g As Graphics, mouseX As Integer, mouseY As Integer)
-            g.Clear(Color.Black)
-            DrawBorders(g)
-            DrawLockedPieces(g)
-            DrawCurrentPiece(g)
-            DrawNextPiece(g)
-            DrawScore(g)
-
-            DrawButtons(g, mouseX, mouseY)
+        Private Sub RefillBag()
+            For Each piece As TetrominoType In [Enum].GetValues(GetType(TetrominoType))
+                If piece <> TetrominoType.None Then
+                    tetrominoBag.Enqueue(piece)
+                End If
+            Next
+            tetrominoBag.Randomise()
         End Sub
         Private Sub DrawNextPiece(g As Graphics)
 
@@ -775,358 +1003,325 @@ Public Class Form1
                     Dim currentTileYPosition = gridOffsetStartY + (columns * tileSize)
                     g.DrawRectangle(Pens.Gray, currentTileXPosition, currentTileYPosition, tileSize, tileSize)
                     If board(rows, columns) <> TetrominoType.None Then
-                        g.FillRectangle(New SolidBrush(GetTetrominoColour(board(rows, columns))), currentTileXPosition, currentTileYPosition, tileSize, tileSize)
+                        g.FillRectangle(New SolidBrush(SceneManager.GetTetrominoColour(board(rows, columns))), currentTileXPosition, currentTileYPosition, tileSize, tileSize)
                         g.DrawRectangle(New Pen(Color.Black), currentTileXPosition, currentTileYPosition, tileSize, tileSize)
                     End If
                 Next
             Next
         End Sub
 
-        Public Shared Function GetTetrominoColour(value As TetrominoType) As Color
-            Select Case value
-                Case TetrominoType.I_Piece
-                    Return Color.Cyan
-                Case TetrominoType.O_Piece
-                    Return Color.Yellow
-                Case TetrominoType.T_Piece
-                    Return Color.Purple
-                Case TetrominoType.L_Piece
-                    Return Color.Orange
-                Case TetrominoType.J_Piece
-                    Return Color.Blue
-                Case TetrominoType.S_Piece
-                    Return Color.Green
-                Case TetrominoType.Z_Piece
-                    Return Color.Red
-                Case TetrominoType.None
-                    Return Color.Black
-                Case Else
-                    Return Color.Black
-            End Select
-        End Function
-#End Region
 
-#Region "Layout & Helper Functions"
-        Private Function GetHorizontalCenter(width As Integer) As Integer
-            Return (screenWidth - width) \ 2
-        End Function
+    End Class
+    Class PauseScene
+        Inherits BaseScene
 
-        Private Function GetVerticalCenter(height As Integer) As Integer
-            Return (screenHeight - height) \ 2
-        End Function
+        Public Sub New(screenWidth As Integer, screenHeight As Integer, sceneManager As SceneManager)
+            MyBase.New(screenWidth, screenHeight, sceneManager)
 
-        Private Function GetRelativeX(percent As Double) As Integer
-            Return CInt(screenWidth * percent)
-        End Function
+        End Sub
+        Public Overrides Sub Update(keys As Dictionary(Of Integer, Boolean))
 
-        Private Function GetRelativeY(percent As Double) As Integer
-            Return CInt(screenHeight * percent)
-        End Function
+        End Sub
 
+        Public Overrides Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer)
 
-        Private Function getMinimumRelativePositionX(previewTetromino As Tetromino) As Integer
-            Dim minimumRelativePosition As Integer = 0
-            For Each relativePosition In previewTetromino.getBlockRelativePositions
-                Dim x = relativePosition.X
+        End Sub
 
-                If x < minimumRelativePosition Then
-                    minimumRelativePosition = x
-                End If
+        Public Overrides Sub HandleClick(mouseX As Integer, mouseY As Integer)
 
+        End Sub
+    End Class
+    Class GameOverScene
+        Inherits BaseScene
 
-            Next
-            Return minimumRelativePosition
-        End Function
+        Public Sub New(screenWidth As Integer, screenHeight As Integer, sceneManager As SceneManager)
+            MyBase.New(screenWidth, screenHeight, sceneManager)
+        End Sub
+        Public Overrides Sub Update(keys As Dictionary(Of Integer, Boolean))
 
-        Private Function getMaximumRelativePositionX(previewTetromino As Tetromino) As Integer
-            Dim maximumRelativePosition As Integer = 0
-            For Each relativePosition In previewTetromino.getBlockRelativePositions
-                Dim x = relativePosition.X
+        End Sub
 
-                If x > maximumRelativePosition Then
-                    maximumRelativePosition = x
-                End If
+        Public Overrides Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer)
 
+        End Sub
 
-            Next
-            Return maximumRelativePosition
-        End Function
-#End Region
+        Public Overrides Sub HandleClick(mouseX As Integer, mouseY As Integer)
 
+        End Sub
     End Class
     Public Structure Block
-        Public X As Integer
-        Public Y As Integer
+            Public X As Integer
+            Public Y As Integer
 
-        Public Sub New(X As Integer, Y As Integer)
-            Me.X = X
-            Me.Y = Y
-        End Sub
-    End Structure
-    Class Tetromino
-        Private xPosition, yPosition As Integer
-        Private shapeType As TetrominoType
-        Private previousXPosition, previousYPosition As Integer
-        Private blockRelativePositions() As Block
-        Private centreOfRotation As Block
+            Public Sub New(X As Integer, Y As Integer)
+                Me.X = X
+                Me.Y = Y
+            End Sub
+        End Structure
+        Class Tetromino
+            Private xPosition, yPosition As Integer
+            Private shapeType As TetrominoType
+            Private previousXPosition, previousYPosition As Integer
+            Private blockRelativePositions() As Block
+            Private centreOfRotation As Block
 
-        ' Private shape  i'll do this later since its gonna be awkward.
-        Sub New(shapeType As TetrominoType)
+            ' Private shape  i'll do this later since its gonna be awkward.
+            Sub New(shapeType As TetrominoType)
 
-            xPosition = 5
-            yPosition = 0
-            Me.shapeType = shapeType
+                xPosition = 5
+                yPosition = 0
+                Me.shapeType = shapeType
 
-            selectPieceType()
-        End Sub
-        Function getPotentialRotation(direction As DirectionType)
-            Dim rotationRelativePosition(blockRelativePositions.Length) As Block
-            Dim rightMultiplier As Integer = 1
-            Dim leftMultiplier As Integer = 1
+                selectPieceType()
+            End Sub
+            Function getPotentialRotation(direction As DirectionType)
+                Dim rotationRelativePosition(blockRelativePositions.Length) As Block
+                Dim rightMultiplier As Integer = 1
+                Dim leftMultiplier As Integer = 1
 
-            If direction = DirectionType.Right Then
-                rightMultiplier *= -1
-            Else
-                leftMultiplier *= -1
-            End If
+                If direction = DirectionType.Right Then
+                    rightMultiplier *= -1
+                Else
+                    leftMultiplier *= -1
+                End If
 
-            For i As Integer = 0 To blockRelativePositions.Length - 1
-                Dim currentblock = blockRelativePositions(i)
-                Dim relativeX = currentblock.X - centreOfRotation.X
-                Dim relativeY = currentblock.Y - centreOfRotation.Y
+                For i As Integer = 0 To blockRelativePositions.Length - 1
+                    Dim currentblock = blockRelativePositions(i)
+                    Dim relativeX = currentblock.X - centreOfRotation.X
+                    Dim relativeY = currentblock.Y - centreOfRotation.Y
 
-                Dim newX = relativeY * rightMultiplier
-                Dim newY = relativeX * leftMultiplier
+                    Dim newX = relativeY * rightMultiplier
+                    Dim newY = relativeX * leftMultiplier
 
-                rotationRelativePosition(i).X = newX + centreOfRotation.X
-                rotationRelativePosition(i).Y = newY + centreOfRotation.Y
-            Next
+                    rotationRelativePosition(i).X = newX + centreOfRotation.X
+                    rotationRelativePosition(i).Y = newY + centreOfRotation.Y
+                Next
 
-            Return rotationRelativePosition
-        End Function
-        Sub Rotate(direction As DirectionType)
-            Dim rightMultiplier As Integer = 1
-            Dim leftMultiplier As Integer = 1
-            If direction = DirectionType.Right Then
-                rightMultiplier *= -1
-            Else
-                leftMultiplier *= -1
-            End If
-            For i As Integer = 0 To blockRelativePositions.Length - 1
-                Dim currentblock = blockRelativePositions(i)
-                Dim relativeX = currentblock.X - centreOfRotation.X
-                Dim relativeY = currentblock.Y - centreOfRotation.Y
+                Return rotationRelativePosition
+            End Function
+            Sub Rotate(direction As DirectionType)
+                Dim rightMultiplier As Integer = 1
+                Dim leftMultiplier As Integer = 1
+                If direction = DirectionType.Right Then
+                    rightMultiplier *= -1
+                Else
+                    leftMultiplier *= -1
+                End If
+                For i As Integer = 0 To blockRelativePositions.Length - 1
+                    Dim currentblock = blockRelativePositions(i)
+                    Dim relativeX = currentblock.X - centreOfRotation.X
+                    Dim relativeY = currentblock.Y - centreOfRotation.Y
 
-                Dim newX = relativeY * rightMultiplier
-                Dim newY = relativeX * leftMultiplier
+                    Dim newX = relativeY * rightMultiplier
+                    Dim newY = relativeX * leftMultiplier
 
-                blockRelativePositions(i).X = newX + centreOfRotation.X
-                blockRelativePositions(i).Y = newY + centreOfRotation.Y
-            Next
-        End Sub
-        Function getBlockRelativePositions()
-            Return blockRelativePositions
-        End Function
-        Function getCentreOfRotation()
-            Return centreOfRotation
-        End Function
-        Sub selectPieceType()
+                    blockRelativePositions(i).X = newX + centreOfRotation.X
+                    blockRelativePositions(i).Y = newY + centreOfRotation.Y
+                Next
+            End Sub
+            Function getBlockRelativePositions()
+                Return blockRelativePositions
+            End Function
+            Function getCentreOfRotation()
+                Return centreOfRotation
+            End Function
+            Sub selectPieceType()
 
-            Select Case shapeType
-                Case TetrominoType.I_Piece
-                    blockRelativePositions = {New Block(-1, 0), New Block(0, 0), New Block(1, 0), New Block(2, 0)}
-                    centreOfRotation = New Block(0, 0)
-                Case TetrominoType.O_Piece
-                    blockRelativePositions = {New Block(0, 0), New Block(1, 0), New Block(0, 1), New Block(1, 1)}
-                    centreOfRotation = New Block(0, 0)
-                Case TetrominoType.T_Piece
-                    blockRelativePositions = {New Block(-1, 0), New Block(0, 0), New Block(1, 0), New Block(0, 1)}
-                    centreOfRotation = New Block(0, 0)
-                Case TetrominoType.S_Piece
-                    blockRelativePositions = {New Block(0, 0), New Block(1, 0), New Block(-1, 1), New Block(0, 1)}
-                    centreOfRotation = New Block(0, 1)
-                Case TetrominoType.Z_Piece
-                    blockRelativePositions = {New Block(-1, 0), New Block(0, 0), New Block(0, 1), New Block(1, 1)}
-                    centreOfRotation = New Block(0, 1)
-                Case TetrominoType.J_Piece
-                    blockRelativePositions = {New Block(-1, 0), New Block(0, 0), New Block(1, 0), New Block(-1, 1)}
-                    centreOfRotation = New Block(0, 0)
-                Case TetrominoType.L_Piece
-                    blockRelativePositions = {New Block(-1, 0), New Block(0, 0), New Block(1, 0), New Block(1, 1)}
-                    centreOfRotation = New Block(0, 0)
-            End Select
-        End Sub
-        Public Function GetTileColour() As Color
-            Return SceneManager.GetTetrominoColour(shapeType)
-        End Function
-        Private Sub UpdatePreviousPosition()
-            previousXPosition = xPosition
-            previousYPosition = yPosition
-        End Sub
-        Public Sub MovePiece(direction As DirectionType)
-            If direction = DirectionType.Left Then
-                MoveLeft()
-            ElseIf direction = DirectionType.Right Then
-                MoveRight()
-            End If
-        End Sub
+                Select Case shapeType
+                    Case TetrominoType.I_Piece
+                        blockRelativePositions = {New Block(-1, 0), New Block(0, 0), New Block(1, 0), New Block(2, 0)}
+                        centreOfRotation = New Block(0, 0)
+                    Case TetrominoType.O_Piece
+                        blockRelativePositions = {New Block(0, 0), New Block(1, 0), New Block(0, 1), New Block(1, 1)}
+                        centreOfRotation = New Block(0, 0)
+                    Case TetrominoType.T_Piece
+                        blockRelativePositions = {New Block(-1, 0), New Block(0, 0), New Block(1, 0), New Block(0, 1)}
+                        centreOfRotation = New Block(0, 0)
+                    Case TetrominoType.S_Piece
+                        blockRelativePositions = {New Block(0, 0), New Block(1, 0), New Block(-1, 1), New Block(0, 1)}
+                        centreOfRotation = New Block(0, 1)
+                    Case TetrominoType.Z_Piece
+                        blockRelativePositions = {New Block(-1, 0), New Block(0, 0), New Block(0, 1), New Block(1, 1)}
+                        centreOfRotation = New Block(0, 1)
+                    Case TetrominoType.J_Piece
+                        blockRelativePositions = {New Block(-1, 0), New Block(0, 0), New Block(1, 0), New Block(-1, 1)}
+                        centreOfRotation = New Block(0, 0)
+                    Case TetrominoType.L_Piece
+                        blockRelativePositions = {New Block(-1, 0), New Block(0, 0), New Block(1, 0), New Block(1, 1)}
+                        centreOfRotation = New Block(0, 0)
+                End Select
+            End Sub
+            Public Function GetTileColour() As Color
+                Return SceneManager.GetTetrominoColour(shapeType)
+            End Function
+            Private Sub UpdatePreviousPosition()
+                previousXPosition = xPosition
+                previousYPosition = yPosition
+            End Sub
+            Public Sub MovePiece(direction As DirectionType)
+                If direction = DirectionType.Left Then
+                    MoveLeft()
+                ElseIf direction = DirectionType.Right Then
+                    MoveRight()
+                End If
+            End Sub
 
-        Private Sub MoveLeft()
-            xPosition -= 1
-        End Sub
-        Private Sub MoveRight()
-            xPosition += 1
-        End Sub
-        Public Function GetShapeType() As TetrominoType
-            Return shapeType
-        End Function
-        Public Function GetPreviousXPosition() As Integer
-            Return previousXPosition
-        End Function
-        Public Function GetPreviousYPosition() As Integer
-            Return previousYPosition
-        End Function
-        Public Function GetXPosition() As Integer
-            Return xPosition
-        End Function
-        Public Function GetYPosition() As Integer
-            Return yPosition
-        End Function
+            Private Sub MoveLeft()
+                xPosition -= 1
+            End Sub
+            Private Sub MoveRight()
+                xPosition += 1
+            End Sub
+            Public Function GetShapeType() As TetrominoType
+                Return shapeType
+            End Function
+            Public Function GetPreviousXPosition() As Integer
+                Return previousXPosition
+            End Function
+            Public Function GetPreviousYPosition() As Integer
+                Return previousYPosition
+            End Function
+            Public Function GetXPosition() As Integer
+                Return xPosition
+            End Function
+            Public Function GetYPosition() As Integer
+                Return yPosition
+            End Function
 
-        Public Sub Update()
+            Public Sub Update()
 
-            UpdatePreviousPosition()
-            yPosition += 1
-        End Sub
-    End Class
-
-
-    MustInherit Class BaseButton
-        Protected bounds As Rectangle
-        Protected action As Action
-        Protected currentScale As Double = 1.0
-        Private Const initialScale As Double = 1.0
-        Private Const hoverScale As Double = 1.1
-        Private Const scaleSpeed As Double = 0.1
+                UpdatePreviousPosition()
+                yPosition += 1
+            End Sub
+        End Class
 
 
-        Public Sub New(x As Integer, y As Integer, width As Integer, height As Integer, action As Action)
-            bounds = New Rectangle(x, y, width, height)
+        MustInherit Class BaseButton
+            Protected bounds As Rectangle
+            Protected action As Action
+            Protected currentScale As Double = 1.0
+            Private Const initialScale As Double = 1.0
+            Private Const hoverScale As Double = 1.1
+            Private Const scaleSpeed As Double = 0.1
 
 
-            Me.action = action
-        End Sub
+            Public Sub New(x As Integer, y As Integer, width As Integer, height As Integer, action As Action)
+                bounds = New Rectangle(x, y, width, height)
 
-        Public Sub HandleClick(mouseX As Integer, mouseY As Integer)
-            If bounds.Contains(mouseX, mouseY) Then
-                action.Invoke()
-                'audioController.Play("ClickSound")
-            End If
-        End Sub
 
-        Protected Sub UpdateScale(isHover As Boolean)
-            Dim targetScale = If(isHover, hoverScale, initialScale)
+                Me.action = action
+            End Sub
 
-            currentScale += (targetScale - currentScale) * scaleSpeed
-        End Sub
+            Public Sub HandleClick(mouseX As Integer, mouseY As Integer)
+                If bounds.Contains(mouseX, mouseY) Then
+                    action.Invoke()
+                    'audioController.Play("ClickSound")
+                End If
+            End Sub
 
-        Protected Function GetScaledBounds() As Rectangle
-            Dim newWidth = bounds.Width * currentScale
-            Dim newHeight = bounds.Height * currentScale
+            Protected Sub UpdateScale(isHover As Boolean)
+                Dim targetScale = If(isHover, hoverScale, initialScale)
 
-            Dim offsetX = (newWidth - bounds.Width) / 2
-            Dim offsetY = (newHeight - bounds.Height) / 2
+                currentScale += (targetScale - currentScale) * scaleSpeed
+            End Sub
 
-            Return New Rectangle(
+            Protected Function GetScaledBounds() As Rectangle
+                Dim newWidth = bounds.Width * currentScale
+                Dim newHeight = bounds.Height * currentScale
+
+                Dim offsetX = (newWidth - bounds.Width) / 2
+                Dim offsetY = (newHeight - bounds.Height) / 2
+
+                Return New Rectangle(
                 bounds.X - offsetX,
                 bounds.Y - offsetY,
                 newWidth,
                 newHeight
             )
-        End Function
-        Public MustOverride Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer)
-    End Class
+            End Function
+            Public MustOverride Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer)
+        End Class
 
-    Class TextButton
-        Inherits BaseButton
+        Class TextButton
+            Inherits BaseButton
 
-        Private text As String
-        Private baseColour As Color
-        Private hoverColour As Color
-        Private textColour As Color
-        Private font As Font
+            Private text As String
+            Private baseColour As Color
+            Private hoverColour As Color
+            Private textColour As Color
+            Private font As Font
 
-        Public Sub New(x As Integer, y As Integer, width As Integer, height As Integer,
+            Public Sub New(x As Integer, y As Integer, width As Integer, height As Integer,
                  text As String, textColour As Color,
                  baseColour As Color, hoverColour As Color,
                  action As Action)
-            MyBase.New(x, y, width, height, action)
+                MyBase.New(x, y, width, height, action)
 
-            Me.textColour = textColour
-            Me.baseColour = baseColour
-            Me.hoverColour = hoverColour
-            Me.text = text
-            Me.font = New Font("Consolas", 16)
+                Me.textColour = textColour
+                Me.baseColour = baseColour
+                Me.hoverColour = hoverColour
+                Me.text = text
+                Me.font = New Font("Consolas", 16)
 
-        End Sub
+            End Sub
 
-        Public Overrides Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer)
-            Dim isHover = bounds.Contains(mouseX, mouseY)
-            Dim colour = If(isHover, hoverColour, baseColour)
-            Dim drawBounds = GetScaledBounds()
-            UpdateScale(isHover)
+            Public Overrides Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer)
+                Dim isHover = bounds.Contains(mouseX, mouseY)
+                Dim colour = If(isHover, hoverColour, baseColour)
+                Dim drawBounds = GetScaledBounds()
+                UpdateScale(isHover)
 
-            g.FillRectangle(New SolidBrush(colour), drawBounds)
+                g.FillRectangle(New SolidBrush(colour), drawBounds)
 
-            Dim textSize As SizeF = g.MeasureString(text, font)
-            Dim textX = drawBounds.X + (drawBounds.Width - textSize.Width) / 2
-            Dim textY = drawBounds.Y + (drawBounds.Height - textSize.Height) / 2
+                Dim textSize As SizeF = g.MeasureString(text, font)
+                Dim textX = drawBounds.X + (drawBounds.Width - textSize.Width) / 2
+                Dim textY = drawBounds.Y + (drawBounds.Height - textSize.Height) / 2
 
-            g.DrawString(text, font, New SolidBrush(textColour), textX, textY)
-        End Sub
-    End Class
+                g.DrawString(text, font, New SolidBrush(textColour), textX, textY)
+            End Sub
+        End Class
 
-    Class ImageButton
-        Inherits BaseButton
+        Class ImageButton
+            Inherits BaseButton
 
-        Private image As Image
+            Private image As Image
 
-        Public Sub New(x As Integer, y As Integer, width As Integer, height As Integer,
+            Public Sub New(x As Integer, y As Integer, width As Integer, height As Integer,
                    image As Image,
                    action As Action)
 
-            MyBase.New(x, y, width, height, action)
-            Me.image = image
-        End Sub
+                MyBase.New(x, y, width, height, action)
+                Me.image = image
+            End Sub
 
-        Public Overrides Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer)
-            Dim isHover = bounds.Contains(mouseX, mouseY)
-            UpdateScale(isHover)
+            Public Overrides Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer)
+                Dim isHover = bounds.Contains(mouseX, mouseY)
+                UpdateScale(isHover)
 
-            Dim drawBounds = GetScaledBounds()
-            g.DrawImage(image, drawBounds)
-        End Sub
-    End Class
+                Dim drawBounds = GetScaledBounds()
+                g.DrawImage(image, drawBounds)
+            End Sub
+        End Class
 
-    'Class AudioManager
-    '    Private sounds As New Dictionary(Of String, AudioFileReader)
-    '    Private outputs As New Dictionary(Of String, WaveOutEvent)
+        'Class AudioManager
+        '    Private sounds As New Dictionary(Of String, AudioFileReader)
+        '    Private outputs As New Dictionary(Of String, WaveOutEvent)
 
-    '    Public Sub Load(name As String, resourceStream As System.IO.UnmanagedMemoryStream)
-    '        Dim player As New System.Media.SoundPlayer(resourceStream)
-    '        player.Load()
-    '        sounds(name) = player
-    '    End Sub
+        '    Public Sub Load(name As String, resourceStream As System.IO.UnmanagedMemoryStream)
+        '        Dim player As New System.Media.SoundPlayer(resourceStream)
+        '        player.Load()
+        '        sounds(name) = player
+        '    End Sub
 
-    '    Public Sub Play(name As String)
-    '        If Not sounds.ContainsKey(name) Then Return
+        '    Public Sub Play(name As String)
+        '        If Not sounds.ContainsKey(name) Then Return
 
-    '        sounds(name).Play()
-    '    End Sub
-    'End Class
+        '        sounds(name).Play()
+        '    End Sub
+        'End Class
 
 
-    Class Queue(Of T)
+        Class Queue(Of T)
             Private items() As T
             Private front As Integer = 0
             Private rear As Integer = -1
@@ -1185,16 +1380,16 @@ Public Class Form1
             End Sub
         End Class
 
-#End Region
+
 
 
 #Region "These sections should not be modified"
 
 
 #Region "GameWindowSetup"
-        ' Set up the double buffer and Game Loop
-        ' You should not need to modify any of this code
-        Private backBuffer As Image
+    ' Set up the double buffer and Game Loop
+    ' You should not need to modify any of this code
+    Private backBuffer As Image
         Private bufferDisplay As Graphics
         Private graphicsDisplay As Graphics
         Private Shadows Sub Paint(ByVal g As Graphics)
@@ -1265,9 +1460,9 @@ Public Class Form1
         Private Sub Form1_KeyUp(sender As Object, e As KeyEventArgs) Handles Me.KeyUp
             If KeyPressed.ContainsKey(e.KeyCode) Then
                 KeyPressed(e.KeyCode) = False
-                ' Cancel the key delay to allow an instant repress
-                KeyDelayCounter = KeyRepeatInterval
-            Else
+            ' Cancel the key delay to allow an instant repress
+            'KeyDelayCounter = KeyRepeatInterval
+        Else
                 KeyPressed.Add(e.KeyCode, False)
             End If
         End Sub
