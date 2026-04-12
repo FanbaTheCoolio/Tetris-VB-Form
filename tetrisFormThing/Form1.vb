@@ -54,6 +54,7 @@ Public Class Form1
         Q = 81
         A = 65
         D = 68
+        H = 72
     End Enum
     Enum PlayerAction
         LeftRotation
@@ -326,11 +327,7 @@ Public Class Form1
 
     '#Region "Core Game Mechanics"
     '       
-    '        Private Sub SoftDrop()
-    '            softDropDebounce = True
-    '            softDropCounter = 0
-    '        End Sub
-
+    '      
     '#Region "Movement And Rotation"
     '        Public Sub HandleAction(action As PlayerAction)
 
@@ -606,7 +603,25 @@ Public Class Form1
                     board(x, y) = TetrominoType.None
                 Next
             Next
+            gridOffsetStartX = (screenWidth - (tileSize * gridWidth) - tileSize) / 2
+            previewAnchorX = ((gridOffsetStartX + ((gridWidth)) * tileSize) + (tileSize * 2))
+            previewAnchorY = tileSize * 2
 
+
+
+            Dim pauseButtonWidth As Integer = GetRelativeX(0.2)
+            Dim pauseButtonHeight As Integer = GetRelativeY(0.08)
+
+            Dim pauseButtonCentreX As Integer = GetRelativeX(0.05)
+            Dim pauseButtonCentreY As Integer = GetRelativeY(0.05)
+
+
+            buttons.Add(New ImageButton(pauseButtonCentreX, pauseButtonCentreY, pauseButtonWidth, pauseButtonHeight, My.Resources.Resource1.Pause, Sub() manager.ChangeScene(New PauseScene(screenWidth, screenHeight, manager))))
+
+
+
+            scoreXPosition = pauseButtonCentreX
+            scoreYPosition = pauseButtonCentreY + (pauseButtonHeight + scoreSpacing)
 
         End Sub
 
@@ -636,108 +651,49 @@ Public Class Form1
                 tetrominoDelayCounter = 0
             End If
         End Sub
-        Private Sub handleInput(keys As Dictionary(Of Integer, Boolean))
-            'If currentSceneManager.IsSoftDropReady Then
-            '    If KeyPressed.ContainsKey(32) Then
-            '        If KeyPressed(32) Then
-            '            currentSceneManager.HandleAction(PlayerAction.SoftDrop)
-            '        End If
-            '    End If
-            'Else
-            '    currentSceneManager.IncrementSoftDropCounter()
-            'End If
 
-            If KeyDelayCounter = KeyRepeatInterval Then
+        Private Sub SoftDrop()
+            softDropDebounce = True
+        End Sub
+
+        Private Sub HandleInput(keys As Dictionary(Of Integer, Boolean))
+            If KeyDelayCounter >= KeyRepeatInterval Then
 
                 If keys.ContainsKey(KeyCode.Q) AndAlso keys(KeyCode.Q) Then
-
+                    AttemptLeftRotation()
+                    KeyDelayCounter = 0
                 End If
+                If keys.ContainsKey(KeyCode.R) AndAlso keys(KeyCode.R) Then
+                    AttemptRightRotation()
+                    KeyDelayCounter = 0
+                End If
+                If (keys.ContainsKey(KeyCode.A) AndAlso keys(KeyCode.A)) Or (keys.ContainsKey(KeyCode.LeftArrow) AndAlso keys(KeyCode.LeftArrow)) Then
+                    AttemptLeftMovement()
+                    KeyDelayCounter = 0
+                End If
+                If keys.ContainsKey(KeyCode.D) AndAlso keys(KeyCode.D) Or (keys.ContainsKey(KeyCode.RightArrow) AndAlso keys(KeyCode.RightArrow)) Then
+                    AttemptRightMovement()
+                    KeyDelayCounter = 0
+                End If
+                If keys.ContainsKey(KeyCode.H) AndAlso keys(KeyCode.H) Then
+                    Hold()
+                    KeyDelayCounter = 0
+                End If
+                If keys.ContainsKey(KeyCode.Q) AndAlso keys(KeyCode.Q) Then
+                    AttemptLeftRotation()
+                    KeyDelayCounter = 0
+                End If
+
             Else
                 KeyDelayCounter += 1
             End If
-            '    If KeyPressed.ContainsKey(81) Then
-            '            If KeyPressed(81) Then
-            '                currentSceneManager.HandleAction(PlayerAction.LeftRotation)
-            '                KeyDelayCounter = 0
-            '            End If
-            '        End If
 
-            '        If KeyPressed.ContainsKey(82) Then
-            '            If KeyPressed(82) Then
-            '                currentSceneManager.HandleAction(PlayerAction.RightRotation)
-            '                KeyDelayCounter = 0
-            '            End If
-            '        End If
-
-
-            '        If KeyPressed.ContainsKey(72) Then
-            '            If KeyPressed(72) Then
-            '                currentSceneManager.HandleAction(PlayerAction.Hold)
-            '                KeyDelayCounter = 0
-            '            End If
-            '        End If
-
-
-            '        If KeyPressed.ContainsKey(37) Then
-            '            If KeyPressed(37) Then
-            '                ' *********************************************************
-            '                ' ** The code below runs when the LEFT (37) key is pressed **
-            '                ' *********************************************************
-
-            '                currentSceneManager.HandleAction(PlayerAction.LeftMovement)
-
-            '                ' *********************************************************
-            '                ' ** The code above runs when the LEFT (37) key is pressed **
-            '                ' *********************************************************
-            '                KeyDelayCounter = 0
-            '            End If
-            '        End If
-
-            '        If KeyPressed.ContainsKey(65) Then
-            '            If KeyPressed(65) Then
-            '                ' *********************************************************
-            '                ' ** The code below runs when the A (65) key is pressed **
-            '                ' *********************************************************
-
-            '                currentSceneManager.HandleAction(PlayerAction.LeftMovement)
-
-            '                ' *********************************************************
-            '                ' ** The code above runs when the A (65) key is pressed **
-            '                ' *********************************************************
-            '                KeyDelayCounter = 0
-            '            End If
-            '        End If
-            '        If KeyPressed.ContainsKey(39) Then
-            '            If KeyPressed(39) Then
-            '                ' *********************************************************
-            '                ' ** The code below runs when the RIGHT (39) key is pressed **
-            '                ' *********************************************************
-            '                currentSceneManager.HandleAction(PlayerAction.RightMovement)
-            '                ' *********************************************************
-            '                ' ** The code above runs when the RIGHT (39) key is pressed **
-            '                ' *********************************************************
-            '                KeyDelayCounter = 0
-            '            End If
-            '        End If
-
-
-            '        If KeyPressed.ContainsKey(68) Then
-            '            If KeyPressed(68) Then
-            '                ' *********************************************************
-            '                ' ** The code below runs when the D (68) key is pressed **
-            '                ' *********************************************************
-            '                currentSceneManager.HandleAction(PlayerAction.RightMovement)
-            '                ' *********************************************************
-            '                ' ** The code above runs when the D (68) key is pressed **
-            '                ' *********************************************************
-            '                KeyDelayCounter = 0
-            '            End If
-            '        End If
-
-            '    Else
-
-            '        KeyDelayCounter = KeyDelayCounter + 1
-            'End If
+            If softDropCounter >= softDropInterval Then
+                SoftDrop()
+                softDropCounter = 0
+            Else
+                softDropCounter += 1
+            End If
         End Sub
         Private Sub AttemptLeftMovement()
             Dim canMoveLeft As Boolean = True
