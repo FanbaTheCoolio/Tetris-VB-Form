@@ -55,6 +55,8 @@ Public Class Form1
         A = 65
         D = 68
         H = 72
+        Spacebar = 32
+        S = 83
     End Enum
     Enum PlayerAction
         LeftRotation
@@ -254,165 +256,6 @@ Public Class Form1
             End Select
         End Function
     End Class
-    '    Class SceneManager
-    '#Region "States & Fields"
-    '        Private currentScene As BaseScene
-    '       
-
-
-    '        Private stateButtons As New Dictionary(Of GameState, List(Of BaseButton))
-
-
-    '#End Region
-
-
-
-    '#Region "Initialisation & Game State"
-    '        Public Sub New(screenWidth As Integer, screenHeight As Integer)
-    '            stateButtons = New Dictionary(Of GameState, List(Of BaseButton)) From {
-    '    {GameState.StartMenu, New List(Of BaseButton)},
-    '    {GameState.Ingame, New List(Of BaseButton)},
-    '    {GameState.Pause, New List(Of BaseButton)},
-    '    {GameState.GameOver, New List(Of BaseButton)}
-    '}
-    '            Me.screenWidth = screenWidth
-    '            Me.screenHeight = screenHeight
-
-
-    '        End Sub
-    '        Private Sub changeScene()
-
-    '        End Sub
-    '        Private Sub InitialiseGame()
-    '           
-    '        End Sub
-
-    '        Private Sub ChangeGameState(newGameState As GameState)
-    '            Select Case newGameState
-    '                Case GameState.StartMenu
-    '                    currentGameState = newGameState
-    '                Case GameState.Ingame
-    '                    currentGameState = newGameState
-    '                Case GameState.GameOver
-    '                    currentGameState = newGameState
-    '                Case GameState.Pause
-    '                    currentGameState = newGameState
-    '            End Select
-    '        End Sub
-
-    '#End Region
-
-    '#Region "Game Loop Logic"
-    '    Public Sub Update()
-    '            Select Case currentGameState
-    '                Case GameState.Ingame
-    '                    UpdateIngameState()
-    '                Case GameState.StartMenu
-
-    '            End Select
-    '        End Sub
-    '      
-    '        Private Sub UpdateIngameState()
-    '            
-    '        End Sub
-
-    '        Public Function IsSoftDropReady()
-    '            Return softDropCounter >= softDropInterval
-
-    '        End Function
-    '        Public Sub IncrementSoftDropCounter()
-    '            softDropCounter += 1
-    '        End Sub
-    '#End Region
-
-    '#Region "Core Game Mechanics"
-    '       
-    '      
-    '#Region "Movement And Rotation"
-    '        Public Sub HandleAction(action As PlayerAction)
-
-    '            If currentGameState <> GameState.Ingame Then Return
-
-    '            Select Case action
-    '                Case PlayerAction.LeftMovement
-    '                    AttemptLeftMovement()
-    '                Case PlayerAction.RightMovement
-    '                    AttemptRightMovement()
-    '                Case PlayerAction.LeftRotation
-    '                    AttemptLeftRotation()
-    '                Case PlayerAction.RightRotation
-    '                    AttemptRightRotation()
-    '                Case PlayerAction.SoftDrop
-    '                    SoftDrop()
-    '                Case Else
-    '                    Throw New ArgumentOutOfRangeException(NameOf(action))
-    '            End Select
-    '        End Sub
-    '       
-
-    '#Region "UI And Input Handling"
-    '        Public Sub HandleClicks(mouseX As Integer, mouseY As Integer)
-    '            If Not stateButtons.ContainsKey(currentGameState) Then Return
-
-    '            For Each button In stateButtons(currentGameState)
-    '                button.HandleClick(mouseX, mouseY)
-    '            Next
-    '        End Sub
-    '#End Region
-
-    '#Region "Rendering"
-    '        Public Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer)
-    '            Select Case currentGameState
-    '                Case GameState.Ingame
-    '                    DrawIngameState(g, mouseX, mouseY)
-    '                Case GameState.StartMenu
-    '                    DrawStartState(g, mouseX, mouseY)
-    '                Case GameState.Pause
-    '                    DrawPauseState(g, mouseX, mouseY)
-    '                Case GameState.GameOver
-    '                    DrawGameOverState(g, mouseX, mouseY)
-    '            End Select
-    '        End Sub
-
-
-
-    '        Private Sub DrawButtons(g As Graphics, mouseX As Integer, mouseY As Integer)
-    '            For Each button In stateButtons(currentGameState)
-    '                button.Draw(g, mouseX, mouseY)
-    '            Next
-    '        End Sub
-    '        Private Sub DrawStartState(g As Graphics, mouseX As Integer, mouseY As Integer)
-    '           
-    '        End Sub
-
-    '        Private Sub DrawGameOverState(g As Graphics, mouseX As Integer, mouseY As Integer)
-    '            g.Clear(Color.Black)
-
-    '            DrawButtons(g, mouseX, mouseY)
-    '        End Sub
-    '        Private Sub DrawPauseState(g As Graphics, mouseX As Integer, mouseY As Integer)
-    '            g.Clear(Color.Black)
-    '            DrawBorders(g)
-    '            DrawLockedPieces(g)
-    '            DrawCurrentPiece(g)
-    '            DrawNextPiece(g)
-    '            DrawScore(g)
-
-    '            DrawButtons(g, mouseX, mouseY)
-
-    '        End Sub
-    '        Private Sub DrawIngameState(g As Graphics, mouseX As Integer, mouseY As Integer)
-    '           
-    '        End Sub
-    '       
-
-    '#End Region
-
-    '#Region "Layout & Helper Functions"
-
-    '#End Region
-
-    '    End Class
 
 
 #Region "Scenes"
@@ -649,21 +492,13 @@ Public Class Form1
                 End If
 
                 currentTetromino.Update()
-
-                'Debug.WriteLine("X : " & currentTetromino.GetXPosition)
-                'Debug.WriteLine("Y : " & currentTetromino.GetYPosition)
-                'Debug.WriteLine("Previous X : " & currentTetromino.GetPreviousXPosition)
-                'Debug.WriteLine("Previous Y : " & currentTetromino.GetPreviousYPosition)
-                'board(currentTetromino.GetXPosition, currentTetromino.GetYPosition) = currentTetromino.GetShapeType
-                'board(currentTetromino.GetPreviousXPosition, currentTetromino.GetPreviousYPosition) = TetrominoType.None
                 tetrominoDelayCounter = 0
             End If
         End Sub
 
-        Private Sub SoftDrop()
-            softDropDebounce = True
-        End Sub
 
+
+#Region "Input & Movement"
         Private Sub HandleInput(keys As Dictionary(Of Integer, Boolean))
             If KeyDelayCounter >= KeyRepeatInterval Then
 
@@ -697,8 +532,10 @@ Public Class Form1
             End If
 
             If softDropCounter >= softDropInterval Then
-                SoftDrop()
-                softDropCounter = 0
+                If (keys.ContainsKey(KeyCode.Spacebar) AndAlso keys(KeyCode.Spacebar)) Or (keys.ContainsKey(KeyCode.S) AndAlso keys(KeyCode.S)) Then
+                    SoftDrop()
+                    softDropCounter = 0
+                End If
             Else
                 softDropCounter += 1
             End If
@@ -735,7 +572,9 @@ Public Class Form1
             End If
 
         End Sub
-
+        Private Sub SoftDrop()
+            softDropDebounce = True
+        End Sub
         Private Sub AttemptRightRotation()
             If currentTetromino.GetShapeType = TetrominoType.O_Piece Then Return
 
@@ -772,7 +611,15 @@ Public Class Form1
                 currentTetromino.Rotate(DirectionType.Left)
             End If
         End Sub
+        Public Overrides Sub HandleClick(mouseX As Integer, mouseY As Integer)
+            For Each button In buttons
+                button.HandleClick(mouseX, mouseY)
+            Next
+        End Sub
 
+#End Region
+
+#Region "Core Mechanics"
         Private Function ShouldBeLocked()
             For Each relativePosition In currentTetromino.getBlockRelativePositions
                 Dim brickXPosition = currentTetromino.GetXPosition + relativePosition.X
@@ -790,7 +637,7 @@ Public Class Form1
         End Function
         Private Function IsGameOver(upcomingPiece As TetrominoType) As Boolean
             Dim upcomingTetromino As New Tetromino(upcomingPiece)
-            For Each relativePosition In currentTetromino.getBlockRelativePositions
+            For Each relativePosition In upcomingTetromino.getBlockRelativePositions
                 Dim brickXPosition = upcomingTetromino.GetXPosition + relativePosition.X
                 Dim brickYPosition = upcomingTetromino.GetYPosition + relativePosition.Y
 
@@ -815,12 +662,8 @@ Public Class Form1
             Next
             ClearLines()
 
-
             Dim upcomingPiece As TetrominoType = tetrominoBag.Peek
-            Debug.WriteLine("Mew")
             If IsGameOver(upcomingPiece) Then
-
-
                 manager.ChangeScene(New GameOverScene(screenWidth, screenHeight, manager, gameScore))
 
             Else
@@ -882,12 +725,17 @@ Public Class Form1
         Private Sub Hold()
 
         End Sub
-
-        Public Overrides Sub HandleClick(mouseX As Integer, mouseY As Integer)
-            For Each button In buttons
-                button.HandleClick(mouseX, mouseY)
+        Private Sub RefillBag()
+            For Each piece As TetrominoType In [Enum].GetValues(GetType(TetrominoType))
+                If piece <> TetrominoType.None Then
+                    tetrominoBag.Enqueue(piece)
+                End If
             Next
+            tetrominoBag.Randomise()
         End Sub
+#End Region
+
+
         Public Overrides Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer)
             g.Clear(Color.Black)
             DrawBorders(g)
@@ -908,14 +756,9 @@ Public Class Form1
             Me.shouldDrawButtons = shouldDrawButtons
         End Sub
 
-        Private Sub RefillBag()
-            For Each piece As TetrominoType In [Enum].GetValues(GetType(TetrominoType))
-                If piece <> TetrominoType.None Then
-                    tetrominoBag.Enqueue(piece)
-                End If
-            Next
-            tetrominoBag.Randomise()
-        End Sub
+
+
+#Region "Drawing Helpers"
         Private Sub DrawNextPiece(g As Graphics)
 
             Dim nextType = tetrominoBag.Peek()
@@ -980,8 +823,16 @@ Public Class Form1
                 Next
             Next
         End Sub
+#End Region
 
 
+
+    End Class
+
+    Class Board
+        Private gridWidth As Integer = 8
+        Private Const gridHeight As Integer = 18
+        Private board(gridWidth, gridHeight) As TetrominoType
     End Class
     Class PauseScene
         Inherits BaseScene
@@ -1016,11 +867,11 @@ Public Class Form1
             previousScene.SetShouldDrawButtons(False)
             previousScene.Draw(g, mouseX, mouseY)
 
-            ' Dark overlay
+
             Dim overlay As New SolidBrush(Color.FromArgb(150, Color.Black))
             g.FillRectangle(overlay, 0, 0, screenWidth, screenHeight)
 
-            ' Pause text
+
             Dim font As New Font("Consolas", 40, FontStyle.Bold)
             Dim text = "PAUSED"
             Dim size = g.MeasureString(text, font)
@@ -1030,7 +881,7 @@ Public Class Form1
                 GetRelativeY(0.2)
             )
 
-            ' Buttons
+
             For Each b In buttons
                 b.Draw(g, mouseX, mouseY)
             Next
@@ -1048,7 +899,7 @@ Public Class Form1
         Inherits BaseScene
 
         Private finalScore As Integer
-        Private buttons As New List(Of BaseButton)
+
 
         Public Sub New(screenWidth As Integer, screenHeight As Integer, manager As SceneManager, score As Integer)
             MyBase.New(screenWidth, screenHeight, manager)
@@ -1137,9 +988,8 @@ Public Class Form1
         End Structure
         Class Tetromino
             Private xPosition, yPosition As Integer
-            Private shapeType As TetrominoType
-            Private previousXPosition, previousYPosition As Integer
-            Private blockRelativePositions() As Block
+        Private shapeType As TetrominoType
+        Private blockRelativePositions() As Block
             Private centreOfRotation As Block
 
             ' Private shape  i'll do this later since its gonna be awkward.
@@ -1231,11 +1081,8 @@ Public Class Form1
             Public Function GetTileColour() As Color
                 Return SceneManager.GetTetrominoColour(shapeType)
             End Function
-            Private Sub UpdatePreviousPosition()
-                previousXPosition = xPosition
-                previousYPosition = yPosition
-            End Sub
-            Public Sub MovePiece(direction As DirectionType)
+
+        Public Sub MovePiece(direction As DirectionType)
                 If direction = DirectionType.Left Then
                     MoveLeft()
                 ElseIf direction = DirectionType.Right Then
@@ -1252,28 +1099,20 @@ Public Class Form1
             Public Function GetShapeType() As TetrominoType
                 Return shapeType
             End Function
-            Public Function GetPreviousXPosition() As Integer
-                Return previousXPosition
-            End Function
-            Public Function GetPreviousYPosition() As Integer
-                Return previousYPosition
-            End Function
-            Public Function GetXPosition() As Integer
+
+        Public Function GetXPosition() As Integer
                 Return xPosition
             End Function
-            Public Function GetYPosition() As Integer
-                Return yPosition
-            End Function
+        Public Function GetYPosition() As Integer
+            Return yPosition
+        End Function
 
-            Public Sub Update()
+        Public Sub Update()
+            yPosition += 1
+        End Sub
+    End Class
 
-                UpdatePreviousPosition()
-                yPosition += 1
-            End Sub
-        End Class
-
-
-        MustInherit Class BaseButton
+    MustInherit Class BaseButton
             Protected bounds As Rectangle
             Protected action As Action
             Protected currentScale As Double = 1.0
@@ -1456,6 +1295,8 @@ Public Class Form1
                 Next
             End Sub
         End Class
+
+
 
 #End Region
 
