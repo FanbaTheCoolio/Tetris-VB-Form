@@ -16,7 +16,7 @@ Public Class CyclicQueue(Of T)
         Return count = 0
     End Function
 
-    Public Function isFull()
+    Public Function IsFull()
         Return count = capacity
     End Function
 

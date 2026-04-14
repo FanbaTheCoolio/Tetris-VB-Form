@@ -5,7 +5,7 @@
     Private Const gridWidth As Integer = 8
     Private Const gridHeight As Integer = 18
     Private board As New Board(gridWidth, gridHeight)
-    'Private board(gridWidth, gridHeight) As TetrominoType
+
 
 #End Region
 
@@ -155,25 +155,33 @@
             End If
             If keys.ContainsKey(KeyCode.H) AndAlso keys(KeyCode.H) Then
                 Hold()
-                KeyDelayCounter = 0
+                KeyDelayCounter = 0S
             End If
             If keys.ContainsKey(KeyCode.Q) AndAlso keys(KeyCode.Q) Then
                 AttemptLeftRotation()
                 KeyDelayCounter = 0
             End If
-
+            If keys.ContainsKey(KeyCode.Spacebar) AndAlso keys(KeyCode.Spacebar) Then
+                HardDrop()
+                KeyDelayCounter = 0
+            End If
         Else
             KeyDelayCounter += 1
         End If
 
         If softDropCounter >= softDropInterval Then
-            If (keys.ContainsKey(KeyCode.Spacebar) AndAlso keys(KeyCode.Spacebar)) Or (keys.ContainsKey(KeyCode.S) AndAlso keys(KeyCode.S)) Then
+            If (keys.ContainsKey(KeyCode.S) AndAlso keys(KeyCode.S)) Then
                 SoftDrop()
                 softDropCounter = 0
             End If
         Else
             softDropCounter += 1
         End If
+    End Sub
+    Private Sub HardDrop()
+        While Not board.ShouldBeLocked(currentTetromino)
+            currentTetromino.Update()
+        End While
     End Sub
     Private Sub AttemptLeftMovement()
         Dim canMoveLeft As Boolean = True
