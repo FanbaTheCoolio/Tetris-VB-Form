@@ -14,6 +14,7 @@ Imports System.Windows.Forms.AxHost
 Imports System.Windows.Forms.Design
 Imports System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel
 Imports NAudio.Wave
+Imports tetrisFormThing.Form1
 
 
 Public Class Form1
@@ -209,7 +210,7 @@ Public Class Form1
 #Region "User Defined Classes"
 
     Class SceneManager
-        Private currentScene As InterfaceScene
+        Private currentScene As BaseScene
         Private screenWidth, screenHeight As Integer
         Public Sub New(screenWidth As Integer, screenHeight As Integer)
             Me.screenHeight = screenHeight
@@ -218,7 +219,7 @@ Public Class Form1
             currentScene = New StartScene(screenWidth, screenHeight, Me)
         End Sub
 
-        Public Sub ChangeScene(newScene As InterfaceScene)
+        Public Sub ChangeScene(newScene As BaseScene)
             currentScene = newScene
         End Sub
 
@@ -232,7 +233,11 @@ Public Class Form1
         Public Sub HandleClick(mouseX As Integer, mouseY As Integer)
             currentScene.HandleClick(mouseX, mouseY)
         End Sub
-
+        Public Sub ResetKeyDelay()
+            If TypeOf currentScene Is GameScene Then
+                CType(currentScene, GameScene).ResetKeyDelay()
+            End If
+        End Sub
         Public Shared Function GetTetrominoColour(value As TetrominoType) As Color
             Select Case value
                 Case TetrominoType.I_Piece
@@ -261,15 +266,9 @@ Public Class Form1
 #Region "Scenes"
 
 
-    Interface InterfaceScene
-        Sub Update(keys As Dictionary(Of Integer, Boolean))
-        Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer)
 
-        Sub HandleClick(mouseX As Integer, mouseY As Integer)
-    End Interface
 
     MustInherit Class BaseScene
-        Implements InterfaceScene
         Protected manager As SceneManager
         Protected buttons As New List(Of BaseButton)
         Protected screenWidth, screenHeight As Integer
@@ -280,11 +279,11 @@ Public Class Form1
             Me.manager = manager
         End Sub
 
-        Public MustOverride Sub Update(keys As Dictionary(Of Integer, Boolean)) Implements InterfaceScene.Update
+        Public MustOverride Sub Update(keys As Dictionary(Of Integer, Boolean))
 
-        Public MustOverride Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer) Implements InterfaceScene.Draw
+        Public MustOverride Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer)
 
-        Public MustOverride Sub HandleClick(mouseX As Integer, mouseY As Integer) Implements InterfaceScene.HandleClick
+        Public MustOverride Sub HandleClick(mouseX As Integer, mouseY As Integer)
 
         Protected Function GetHorizontalCenter(width As Integer) As Integer
             Return (screenWidth - width) \ 2
@@ -369,7 +368,8 @@ Public Class Form1
 
         Private Const gridWidth As Integer = 8
         Private Const gridHeight As Integer = 18
-        Private board(gridWidth, gridHeight) As TetrominoType
+        Private board As New Board(gridWidth, gridHeight)
+        'Private board(gridWidth, gridHeight) As TetrominoType
 
 #End Region
 
@@ -442,11 +442,7 @@ Public Class Form1
 
 
 
-            For y As Integer = 0 To gridHeight
-                For x As Integer = 0 To gridWidth
-                    board(x, y) = TetrominoType.None
-                Next
-            Next
+
             gridOffsetStartX = (screenWidth - (tileSize * gridWidth) - tileSize) / 2
             previewAnchorX = ((gridOffsetStartX + ((gridWidth)) * tileSize) + (tileSize * 2))
             previewAnchorY = tileSize * 2
@@ -475,7 +471,9 @@ Public Class Form1
             scoreYPosition = pauseButtonCentreY + (pauseButtonHeight + scoreSpacing)
 
         End Sub
-
+        Public Sub ResetKeyDelay()
+            KeyDelayCounter = KeyRepeatInterval
+        End Sub
 
         Public Overrides Sub Update(keys As Dictionary(Of Integer, Boolean))
             handleInput(keys)
@@ -487,8 +485,9 @@ Public Class Form1
             If tetrominoDelayCounter >= tetrominoUpdateInterval Or softDropDebounce Then
                 softDropDebounce = False
 
-                If ShouldBeLocked() Then
+                If board.ShouldBeLocked(currentTetromino) Then
                     LockPiece()
+                    Return
                 End If
 
                 currentTetromino.Update()
@@ -546,7 +545,7 @@ Public Class Form1
                 Dim brickXPosition = currentTetromino.GetXPosition + relativePosition.X
                 Dim brickYPosition = currentTetromino.GetYPosition + relativePosition.Y
 
-                If Not IsValidPosition(brickXPosition - 1, brickYPosition) Then
+                If Not board.IsValidPosition(brickXPosition - 1, brickYPosition) Then
                     canMoveLeft = False
 
                 End If
@@ -562,7 +561,7 @@ Public Class Form1
                 Dim brickXPosition = currentTetromino.GetXPosition + relativePosition.X
                 Dim brickYPosition = currentTetromino.GetYPosition + relativePosition.Y
 
-                If Not IsValidPosition(brickXPosition + 1, brickYPosition) Then
+                If Not board.IsValidPosition(brickXPosition + 1, brickYPosition) Then
                     canMoveRight = False
 
                 End If
@@ -584,7 +583,7 @@ Public Class Form1
                 Dim brickXPosition = currentTetromino.GetXPosition + relativePosition.X
                 Dim brickYPosition = currentTetromino.GetYPosition + relativePosition.Y
 
-                If Not IsValidPosition(brickXPosition, brickYPosition) Then
+                If Not board.IsValidPosition(brickXPosition, brickYPosition) Then
                     canRotateRight = False
                 End If
             Next
@@ -602,7 +601,7 @@ Public Class Form1
                 Dim brickXPosition = currentTetromino.GetXPosition + relativePosition.X
                 Dim brickYPosition = currentTetromino.GetYPosition + relativePosition.Y
 
-                If Not IsValidPosition(brickXPosition, brickYPosition) Then
+                If Not board.IsValidPosition(brickXPosition, brickYPosition) Then
                     canRotateRight = False
 
                 End If
@@ -617,55 +616,19 @@ Public Class Form1
             Next
         End Sub
 
+
 #End Region
 
 #Region "Core Mechanics"
-        Private Function ShouldBeLocked()
-            For Each relativePosition In currentTetromino.getBlockRelativePositions
-                Dim brickXPosition = currentTetromino.GetXPosition + relativePosition.X
-                Dim brickYPosition = currentTetromino.GetYPosition + relativePosition.Y
-                If brickYPosition < gridHeight Then
-                    If board(brickXPosition, brickYPosition + 1) <> TetrominoType.None Then
-                        Return True
-                    End If
-                End If
-                If brickYPosition >= (gridHeight) Then
-                    Return True
-                End If
-            Next
-            Return False
-        End Function
-        Private Function IsGameOver(upcomingPiece As TetrominoType) As Boolean
-            Dim upcomingTetromino As New Tetromino(upcomingPiece)
-            For Each relativePosition In upcomingTetromino.getBlockRelativePositions
-                Dim brickXPosition = upcomingTetromino.GetXPosition + relativePosition.X
-                Dim brickYPosition = upcomingTetromino.GetYPosition + relativePosition.Y
-
-                Dim yPosCondition As Boolean = (brickYPosition >= 0 And brickYPosition <= gridHeight)
-
-                If yPosCondition Then
-                    If board(brickXPosition, brickYPosition) <> TetrominoType.None Then
-                        Debug.WriteLine(brickXPosition & " " & brickYPosition)
-                        Return True
-                    End If
-                End If
-            Next
-
-            Return False
-        End Function
         Private Sub LockPiece()
-            For Each relativePosition In currentTetromino.getBlockRelativePositions
-                Dim brickXPosition = currentTetromino.GetXPosition + relativePosition.X
-                Dim brickYPosition = currentTetromino.GetYPosition + relativePosition.Y
+            board.LockPiece(currentTetromino)
+            Dim currentScore = board.ClearLines()
+            addScore(currentScore)
 
-                board(brickXPosition, brickYPosition) = currentTetromino.GetShapeType
-            Next
-            ClearLines()
 
             Dim upcomingPiece As TetrominoType = tetrominoBag.Peek
-            If IsGameOver(upcomingPiece) Then
+            If board.IsGameOver(upcomingPiece) Then
                 manager.ChangeScene(New GameOverScene(screenWidth, screenHeight, manager, gameScore))
-
             Else
                 currentTetromino = New Tetromino(tetrominoBag.Dequeue)
             End If
@@ -677,51 +640,6 @@ Public Class Form1
 
             hasHeldThisTurn = False
         End Sub
-        Private Sub ClearLines()
-            'Dim positionOfLinesToBeCleared As New List(Of Integer)
-
-
-            For y As Integer = 0 To gridHeight
-                Dim isLineClear As Boolean = True
-                For x As Integer = 0 To gridWidth
-                    If board(x, y) = TetrominoType.None Then
-                        isLineClear = False
-                        Exit For
-                    End If
-                Next
-                If isLineClear Then
-                    Debug.WriteLine(y)
-                    'positionOfLinesToBeCleared.Add(y)
-                    gameScore += 50
-                    For lineClearingX As Integer = 0 To gridWidth
-                        board(lineClearingX, y) = TetrominoType.None
-
-                    Next
-                    For gravityY As Integer = (y - 1) To 0 Step -1
-                        For gravityX As Integer = 0 To gridWidth
-                            board(gravityX, gravityY + 1) = board(gravityX, gravityY)
-
-                        Next
-                    Next
-
-                End If
-            Next
-        End Sub
-
-        Private Function IsValidPosition(newX As Integer, newY As Integer) As Boolean
-            Dim xPosCondition As Boolean = (newX >= 0 And newX <= gridWidth)
-            Dim yPosCondition As Boolean = (newY >= 0 And newY <= gridHeight)
-
-
-
-            If xPosCondition And yPosCondition Then
-                Dim isSpotClear As Boolean = (board(newX, newY) = TetrominoType.None)
-                If isSpotClear Then
-                    Return True
-                End If
-            End If
-            Return False
-        End Function
         Private Sub Hold()
 
         End Sub
@@ -733,6 +651,16 @@ Public Class Form1
             Next
             tetrominoBag.Randomise()
         End Sub
+
+        Private Sub addScore(linesCleared As Integer)
+            Select Case linesCleared
+                Case 1 : gameScore += 100
+                Case 2 : gameScore += 300
+                Case 3 : gameScore += 500
+                Case 4 : gameScore += 800
+            End Select
+        End Sub
+
 #End Region
 
 
@@ -816,8 +744,8 @@ Public Class Form1
                     Dim currentTileXPosition = gridOffsetStartX + (rows * tileSize)
                     Dim currentTileYPosition = gridOffsetStartY + (columns * tileSize)
                     g.DrawRectangle(Pens.Gray, currentTileXPosition, currentTileYPosition, tileSize, tileSize)
-                    If board(rows, columns) <> TetrominoType.None Then
-                        g.FillRectangle(New SolidBrush(SceneManager.GetTetrominoColour(board(rows, columns))), currentTileXPosition, currentTileYPosition, tileSize, tileSize)
+                    If board.GetCell(rows, columns) <> TetrominoType.None Then
+                        g.FillRectangle(New SolidBrush(SceneManager.GetTetrominoColour(board.GetCell(rows, columns))), currentTileXPosition, currentTileYPosition, tileSize, tileSize)
                         g.DrawRectangle(New Pen(Color.Black), currentTileXPosition, currentTileYPosition, tileSize, tileSize)
                     End If
                 Next
@@ -830,9 +758,123 @@ Public Class Form1
     End Class
 
     Class Board
-        Private gridWidth As Integer = 8
-        Private Const gridHeight As Integer = 18
-        Private board(gridWidth, gridHeight) As TetrominoType
+        Private gridWidth As Integer
+        Private gridHeight As Integer
+        Private board(,) As TetrominoType
+
+        Public Sub New(gridWidth As Integer, gridHeight As Integer)
+            Me.gridWidth = gridWidth
+            Me.gridHeight = gridHeight
+
+            ReDim board(gridWidth, gridHeight)
+
+            For y As Integer = 0 To gridHeight
+                For x As Integer = 0 To gridWidth
+                    board(x, y) = TetrominoType.None
+                Next
+            Next
+        End Sub
+        Public Function GetCell(x As Integer, y As Integer) As TetrominoType
+            Return board(x, y)
+        End Function
+        Public Function ShouldBeLocked(currentTetromino As Tetromino)
+            For Each relativePosition In currentTetromino.getBlockRelativePositions
+                Dim brickXPosition = currentTetromino.GetXPosition + relativePosition.X
+                Dim brickYPosition = currentTetromino.GetYPosition + relativePosition.Y
+                If brickYPosition < gridHeight Then
+                    If board(brickXPosition, brickYPosition + 1) <> TetrominoType.None Then
+                        Return True
+                    End If
+                End If
+                If brickYPosition >= (gridHeight) Then
+                    Return True
+                End If
+            Next
+            Return False
+        End Function
+        Public Function IsGameOver(upcomingPiece As TetrominoType) As Boolean
+            Dim upcomingTetromino As New Tetromino(upcomingPiece)
+            For Each relativePosition In upcomingTetromino.getBlockRelativePositions
+                Dim brickXPosition = upcomingTetromino.GetXPosition + relativePosition.X
+                Dim brickYPosition = upcomingTetromino.GetYPosition + relativePosition.Y
+
+                Dim yPosCondition As Boolean = (brickYPosition >= 0 And brickYPosition <= gridHeight)
+
+                If yPosCondition Then
+                    If board(brickXPosition, brickYPosition) <> TetrominoType.None Then
+                        Debug.WriteLine(brickXPosition & " " & brickYPosition)
+                        Return True
+                    End If
+                End If
+            Next
+
+            Return False
+        End Function
+        Public Sub LockPiece(currentTetromino As Tetromino)
+            For Each relativePosition In currentTetromino.getBlockRelativePositions
+                Dim brickXPosition = currentTetromino.GetXPosition + relativePosition.X
+                Dim brickYPosition = currentTetromino.GetYPosition + relativePosition.Y
+
+                board(brickXPosition, brickYPosition) = currentTetromino.GetShapeType
+            Next
+            'ClearLines()
+
+            'Dim upcomingPiece As TetrominoType = tetrominoBag.Peek
+            'If IsGameOver(upcomingPiece) Then
+            '    manager.ChangeScene(New GameOverScene(screenWidth, screenHeight, manager, gameScore))
+
+            'Else
+            '    currentTetromino = New Tetromino(tetrominoBag.Dequeue)
+            'End If
+
+
+            'If tetrominoBag.IsEmpty Then
+            '    RefillBag()
+            'End If
+
+            'hasHeldThisTurn = False
+        End Sub
+        Public Function ClearLines()
+
+            Dim linesCleared As Integer = 0
+            For y As Integer = 0 To gridHeight
+                Dim isLineClear As Boolean = True
+                For x As Integer = 0 To gridWidth
+                    If board(x, y) = TetrominoType.None Then
+                        isLineClear = False
+                        Exit For
+                    End If
+                Next
+                If isLineClear Then
+                    linesCleared += 1
+                    For lineClearingX As Integer = 0 To gridWidth
+                        board(lineClearingX, y) = TetrominoType.None
+
+                    Next
+                    For gravityY As Integer = (y - 1) To 0 Step -1
+                        For gravityX As Integer = 0 To gridWidth
+                            board(gravityX, gravityY + 1) = board(gravityX, gravityY)
+                        Next
+                    Next
+                End If
+            Next
+            Return linesCleared
+        End Function
+
+        Public Function IsValidPosition(newX As Integer, newY As Integer) As Boolean
+            Dim xPosCondition As Boolean = (newX >= 0 And newX <= gridWidth)
+            Dim yPosCondition As Boolean = (newY >= 0 And newY <= gridHeight)
+
+
+
+            If xPosCondition And yPosCondition Then
+                Dim isSpotClear As Boolean = (board(newX, newY) = TetrominoType.None)
+                If isSpotClear Then
+                    Return True
+                End If
+            End If
+            Return False
+        End Function
     End Class
     Class PauseScene
         Inherits BaseScene
@@ -1380,6 +1422,8 @@ Public Class Form1
             If KeyPressed.ContainsKey(e.KeyCode) Then
                 KeyPressed(e.KeyCode) = False
             ' Cancel the key delay to allow an instant repress (Should fix this)
+            'TACKY FIX, MAKE IT BETTER LAAAATER
+            currentSceneManager.ResetKeyDelay()
             'KeyDelayCounter = KeyRepeatInterval
         Else
                 KeyPressed.Add(e.KeyCode, False)
