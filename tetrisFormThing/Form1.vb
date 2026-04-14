@@ -210,7 +210,7 @@ Public Class Form1
 #Region "User Defined Classes"
 
     Class SceneManager
-        Private currentScene As BaseScene
+        Private currentScene As InterfaceScene
         Private screenWidth, screenHeight As Integer
         Public Sub New(screenWidth As Integer, screenHeight As Integer)
             Me.screenHeight = screenHeight
@@ -219,7 +219,7 @@ Public Class Form1
             currentScene = New StartScene(screenWidth, screenHeight, Me)
         End Sub
 
-        Public Sub ChangeScene(newScene As BaseScene)
+        Public Sub ChangeScene(newScene As InterfaceScene)
             currentScene = newScene
         End Sub
 
@@ -266,9 +266,15 @@ Public Class Form1
 #Region "Scenes"
 
 
+    Interface InterfaceScene
+        Sub Update(keys As Dictionary(Of Integer, Boolean))
+        Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer)
 
+        Sub HandleClick(mouseX As Integer, mouseY As Integer)
+    End Interface
 
     MustInherit Class BaseScene
+        Implements InterfaceScene
         Protected manager As SceneManager
         Protected buttons As New List(Of BaseButton)
         Protected screenWidth, screenHeight As Integer
@@ -279,11 +285,11 @@ Public Class Form1
             Me.manager = manager
         End Sub
 
-        Public MustOverride Sub Update(keys As Dictionary(Of Integer, Boolean))
+        Public MustOverride Sub Update(keys As Dictionary(Of Integer, Boolean)) Implements InterfaceScene.Update
 
-        Public MustOverride Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer)
+        Public MustOverride Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer) Implements InterfaceScene.Draw
 
-        Public MustOverride Sub HandleClick(mouseX As Integer, mouseY As Integer)
+        Public MustOverride Sub HandleClick(mouseX As Integer, mouseY As Integer) Implements InterfaceScene.HandleClick
 
         Protected Function GetHorizontalCenter(width As Integer) As Integer
             Return (screenWidth - width) \ 2
