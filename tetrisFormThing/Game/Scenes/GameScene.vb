@@ -1,10 +1,13 @@
 ﻿Public Class GameScene
     Inherits BaseScene
+
+#Region "Attributes"
+
 #Region "Grid / Board"
 
-    Private Const gridWidth As Integer = 8
-    Private Const gridHeight As Integer = 18
-    Private board As New Board(gridWidth, gridHeight)
+    Private Const GRID_WIDTH As Integer = 8
+    Private Const GRID_HEIGHT As Integer = 18
+    Private board As New Board(GRID_WIDTH, GRID_HEIGHT)
 
 
 #End Region
@@ -14,9 +17,8 @@
 
     Private currentTetromino As Tetromino
     Private tetrominoBag As New CyclicQueue(Of TetrominoType)(7)
-
-    Private Const tetrominoUpdateInterval As Integer = 30
-    Private Const tetrominoCounterIncrement As Integer = 1
+    Private ReadOnly SPAWN_POSITION As New Point(5, 0)
+    Private Const TETROMINO_UPDATE_INTERVAL As Integer = 30
     Private tetrominoDelayCounter As Integer = 0
 
 #End Region
@@ -29,7 +31,7 @@
 
     Private softDropDebounce As Boolean = False
     Private softDropCounter As Integer = 0
-    Private Const softDropInterval As Integer = 5
+    Private Const SOFT_DROP_INTERVAL As Integer = 5
 
 #End Region
 
@@ -45,43 +47,51 @@
 
 #Region "Rendering / Layout"
 
-    Private Const tileSize As Integer = 40
+    Private Const TILE_SIZE As Integer = 40
     Private shouldDrawButtons As Boolean = True
-    Private gridOffsetStartX As Integer
-    Private Const gridOffsetStartY As Integer = 0
 
-    Private borderColor As Color = Color.RebeccaPurple
+    Private gridStartPositionX As Integer
+    Private Const GRID_START_POSITION_Y As Integer = 0
 
-#End Region
+    Private scorePosition As Point
 
-
-#Region "UI / HUD"
-
-    Private scoreXPosition As Integer
-    Private scoreYPosition As Integer
-
-    Private Const scoreSpacing As Integer = tileSize \ 2
-    Private Const previewSpacing As Integer = tileSize \ 2
-
-    Private Const previewBoxSize As Integer = 4
+    Private rightOfGridAnchor As New Point
     Private previewAnchorX As Integer
     Private previewAnchorY As Integer
 
+    Private Const PREVIEW_BOX_SIZE As Integer = 4
+
+
+    Private Const SCORE_SPACING As Integer = TILE_SIZE \ 2
+    Private Const PREVIEW_SPACING As Integer = TILE_SIZE \ 2
+
+
+    Private ReadOnly BORDER_COLOUR As Color = Color.RebeccaPurple
+
+
+
 #End Region
+
+
+
+#End Region
+
+
     Public Sub New(screenWidth As Integer, screenHeight As Integer, sceneManager As SceneManager)
         MyBase.New(screenWidth, screenHeight, sceneManager)
 
         Randomize()
         RefillBag()
         KeyDelayCounter = 0
-        currentTetromino = New Tetromino(tetrominoBag.Dequeue)
+
+        currentTetromino = New Tetromino(tetrominoBag.Dequeue, SPAWN_POSITION)
 
 
 
 
-        gridOffsetStartX = (screenWidth - (tileSize * gridWidth) - tileSize) / 2
-        previewAnchorX = ((gridOffsetStartX + ((gridWidth)) * tileSize) + (tileSize * 2))
-        previewAnchorY = tileSize * 2
+        gridStartPositionX = (screenWidth - (TILE_SIZE * GRID_WIDTH) - TILE_SIZE) / 2
+        previewAnchorX = ((gridStartPositionX + ((GRID_WIDTH)) * TILE_SIZE) + (TILE_SIZE * 2))
+        previewAnchorY = TILE_SIZE * 2
 
 
 
@@ -103,8 +113,8 @@
 
 
 
-        scoreXPosition = pauseButtonCentreX
-        scoreYPosition = pauseButtonCentreY + (pauseButtonHeight + scoreSpacing)
+        scorePosition.X = pauseButtonCentreX
+        scorePosition.Y = pauseButtonCentreY + (pauseButtonHeight + SCORE_SPACING)
 
     End Sub
     Public Sub ResetKeyDelay()
@@ -118,7 +128,7 @@
     Private Sub GameUpdate()
         tetrominoDelayCounter += 1
 
-        If tetrominoDelayCounter >= tetrominoUpdateInterval Or softDropDebounce Then
+        If tetrominoDelayCounter >= TETROMINO_UPDATE_INTERVAL Or softDropDebounce Then
             softDropDebounce = False
 
             If board.ShouldBeLocked(currentTetromino) Then
@@ -149,16 +159,12 @@
                 AttemptLeftMovement()
                 KeyDelayCounter = 0
             End If
-            If keys.ContainsKey(KeyCode.D) AndAlso keys(KeyCode.D) Or (keys.ContainsKey(KeyCode.RightArrow) AndAlso keys(KeyCode.RightArrow)) Then
+            If (keys.ContainsKey(KeyCode.D) AndAlso keys(KeyCode.D)) Or (keys.ContainsKey(KeyCode.RightArrow) AndAlso keys(KeyCode.RightArrow)) Then
                 AttemptRightMovement()
                 KeyDelayCounter = 0
             End If
             If keys.ContainsKey(KeyCode.H) AndAlso keys(KeyCode.H) Then
                 Hold()
-                KeyDelayCounter = 0S
-            End If
-            If keys.ContainsKey(KeyCode.Q) AndAlso keys(KeyCode.Q) Then
-                AttemptLeftRotation()
                 KeyDelayCounter = 0
             End If
             If keys.ContainsKey(KeyCode.Spacebar) AndAlso keys(KeyCode.Spacebar) Then
@@ -169,7 +175,7 @@
             KeyDelayCounter += 1
         End If
 
-        If softDropCounter >= softDropInterval Then
+        If softDropCounter >= SOFT_DROP_INTERVAL Then
             If (keys.ContainsKey(KeyCode.S) AndAlso keys(KeyCode.S)) Then
                 SoftDrop()
                 softDropCounter = 0
@@ -263,6 +269,7 @@
 
 #End Region
 
+
 #Region "Core Mechanics"
     Private Sub LockPiece()
         board.LockPiece(currentTetromino)
@@ -271,21 +278,40 @@
 
 
         Dim upcomingPiece As TetrominoType = tetrominoBag.Peek
-        If board.IsGameOver(upcomingPiece) Then
+        If board.IsGameOver(upcomingPiece, SPAWN_POSITION) Then
             manager.ChangeScene(New GameOverScene(screenWidth, screenHeight, manager, gameScore))
         Else
-            currentTetromino = New Tetromino(tetrominoBag.Dequeue)
+            SpawnNextTetrominoPiece()
         End If
 
 
-        If tetrominoBag.IsEmpty Then
-            RefillBag()
-        End If
 
         hasHeldThisTurn = False
     End Sub
+
+    Private Sub SpawnNextTetrominoPiece()
+        currentTetromino = New Tetromino(tetrominoBag.Dequeue, SPAWN_POSITION)
+        If tetrominoBag.IsEmpty Then
+            RefillBag()
+        End If
+    End Sub
     Private Sub Hold()
 
+        If hasHeldThisTurn Then Return
+
+
+        If heldPiece = TetrominoType.None Then
+            heldPiece = currentTetromino.GetShapeType
+
+            SpawnNextTetrominoPiece()
+        Else
+            Dim temp As TetrominoType = currentTetromino.GetShapeType
+
+            currentTetromino = New Tetromino(heldPiece, SPAWN_POSITION)
+            heldPiece = temp
+        End If
+
+        hasHeldThisTurn = True
     End Sub
     Private Sub RefillBag()
         For Each piece As TetrominoType In [Enum].GetValues(GetType(TetrominoType))
@@ -308,6 +334,8 @@
 #End Region
 
 
+#Region "Rendering"
+
     Public Overrides Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer)
         g.Clear(Color.Black)
         DrawBorders(g)
@@ -315,7 +343,7 @@
         DrawCurrentPiece(g)
         DrawNextPiece(g)
         DrawScore(g)
-
+        DrawHeldPiece(g)
         If shouldDrawButtons Then
             For Each button In buttons
                 button.Draw(g, mouseX, mouseY)
@@ -328,36 +356,36 @@
         Me.shouldDrawButtons = shouldDrawButtons
     End Sub
 
+    Private Sub DrawHeldPiece(g As Graphics)
 
-
-#Region "Drawing Helpers"
+    End Sub
     Private Sub DrawNextPiece(g As Graphics)
 
         Dim nextType = tetrominoBag.Peek()
-        Dim previewTetromino = New Tetromino(nextType)
+        Dim previewTetromino = New Tetromino(nextType, SPAWN_POSITION)
 
 
         Dim minimumRelativeX As Integer = getMinimumRelativePositionX(previewTetromino)
         Dim pieceWidth = getMaximumRelativePositionX(previewTetromino) - minimumRelativeX + 1
 
 
-        Dim offsetX = (previewBoxSize - pieceWidth) \ 2 - minimumRelativeX
+        Dim offsetX = (PREVIEW_BOX_SIZE - pieceWidth) \ 2 - minimumRelativeX
 
 
 
         For Each block In previewTetromino.GetBlockRelativePositions
-            Dim x = previewAnchorX + ((block.X + offsetX) * tileSize)
-            Dim y = previewAnchorY + (block.Y * tileSize)
+            Dim x = previewAnchorX + ((block.X + offsetX) * TILE_SIZE)
+            Dim y = previewAnchorY + (block.Y * TILE_SIZE)
 
-            g.FillRectangle(New SolidBrush(previewTetromino.GetTileColour), x, y, tileSize, tileSize)
-            g.DrawRectangle(Pens.Black, x, y, tileSize, tileSize)
+            g.FillRectangle(New SolidBrush(previewTetromino.GetTileColour), x, y, TILE_SIZE, TILE_SIZE)
+            g.DrawRectangle(Pens.Black, x, y, TILE_SIZE, TILE_SIZE)
         Next
 
 
         Dim previewFont As Font = New Font("Consolas", 20, FontStyle.Bold)
         Dim labelString As String = "Preview"
 
-        Dim previewLabelYPosition As Integer = previewAnchorY - (previewSpacing * 2)
+        Dim previewLabelYPosition As Integer = previewAnchorY - (PREVIEW_SPACING * 2)
         g.DrawString(labelString, previewFont, New SolidBrush(Color.Black), previewAnchorX, previewLabelYPosition)
     End Sub
 
@@ -365,32 +393,32 @@
         Dim scoreString As String = "Score : " & gameScore
         Dim scoreFont As Font = New Font("Consolas", 20, FontStyle.Bold)
 
-        g.DrawString(scoreString, scoreFont, New SolidBrush(Color.Black), scoreXPosition, scoreYPosition)
+        g.DrawString(scoreString, scoreFont, New SolidBrush(Color.Black), scorePosition.X, scorePosition.Y)
     End Sub
     Private Sub DrawBorders(g As Graphics)
-        g.FillRectangle(New SolidBrush(borderColor), 0, 0, gridOffsetStartX, screenHeight)
-        g.FillRectangle(New SolidBrush(borderColor), gridOffsetStartX + (tileSize * gridWidth) + tileSize, 0, screenWidth, screenHeight)
+        g.FillRectangle(New SolidBrush(BORDER_COLOUR), 0, 0, gridStartPositionX, screenHeight)
+        g.FillRectangle(New SolidBrush(BORDER_COLOUR), gridStartPositionX + (TILE_SIZE * GRID_WIDTH) + TILE_SIZE, 0, screenWidth, screenHeight)
     End Sub
     Private Sub DrawCurrentPiece(g As Graphics)
 
         For Each relativePosition In currentTetromino.GetBlockRelativePositions
-            Dim currentTileXPosition = gridOffsetStartX + ((currentTetromino.GetXPosition + relativePosition.X) * tileSize)
-            Dim currentTileYPosition = gridOffsetStartY + ((currentTetromino.GetYPosition + relativePosition.Y) * tileSize)
-            g.FillRectangle(New SolidBrush(currentTetromino.GetTileColour), currentTileXPosition, currentTileYPosition, tileSize, tileSize)
-            g.DrawRectangle(New Pen(Color.Black), currentTileXPosition, currentTileYPosition, tileSize, tileSize)
+            Dim currentTileXPosition = gridStartPositionX + ((currentTetromino.GetXPosition + relativePosition.X) * TILE_SIZE)
+            Dim currentTileYPosition = GRID_START_POSITION_Y + ((currentTetromino.GetYPosition + relativePosition.Y) * TILE_SIZE)
+            g.FillRectangle(New SolidBrush(currentTetromino.GetTileColour), currentTileXPosition, currentTileYPosition, TILE_SIZE, TILE_SIZE)
+            g.DrawRectangle(New Pen(Color.Black), currentTileXPosition, currentTileYPosition, TILE_SIZE, TILE_SIZE)
         Next
 
 
     End Sub
     Private Sub DrawLockedPieces(g As Graphics)
-        For columns = 0 To gridHeight
-            For rows = 0 To gridWidth
-                Dim currentTileXPosition = gridOffsetStartX + (rows * tileSize)
-                Dim currentTileYPosition = gridOffsetStartY + (columns * tileSize)
-                g.DrawRectangle(Pens.Gray, currentTileXPosition, currentTileYPosition, tileSize, tileSize)
+        For columns = 0 To GRID_HEIGHT
+            For rows = 0 To GRID_WIDTH
+                Dim currentTileXPosition = gridStartPositionX + (rows * TILE_SIZE)
+                Dim currentTileYPosition = GRID_START_POSITION_Y + (columns * TILE_SIZE)
+                g.DrawRectangle(Pens.Gray, currentTileXPosition, currentTileYPosition, TILE_SIZE, TILE_SIZE)
                 If board.GetCell(rows, columns) <> TetrominoType.None Then
-                    g.FillRectangle(New SolidBrush(SceneManager.GetTetrominoColour(board.GetCell(rows, columns))), currentTileXPosition, currentTileYPosition, tileSize, tileSize)
-                    g.DrawRectangle(New Pen(Color.Black), currentTileXPosition, currentTileYPosition, tileSize, tileSize)
+                    g.FillRectangle(New SolidBrush(SceneManager.GetTetrominoColour(board.GetCell(rows, columns))), currentTileXPosition, currentTileYPosition, TILE_SIZE, TILE_SIZE)
+                    g.DrawRectangle(New Pen(Color.Black), currentTileXPosition, currentTileYPosition, TILE_SIZE, TILE_SIZE)
                 End If
             Next
         Next

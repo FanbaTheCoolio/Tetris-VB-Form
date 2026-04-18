@@ -1,5 +1,4 @@
-﻿Imports tetrisFormThing.Form1
-
+﻿
 Public Class SceneManager
     Private currentScene As InterfaceScene
     Private screenWidth, screenHeight As Integer

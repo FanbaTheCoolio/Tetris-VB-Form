@@ -6,16 +6,15 @@
 
         Me.previousScene = previousScene
 
-        Dim btnWidth = GetRelativeX(0.25)
-        Dim btnHeight = GetRelativeY(0.1)
+        Dim buttonWidth = GetRelativeX(0.25)
+        Dim buttonHeight = GetRelativeY(0.1)
 
-        Dim btnX = GetHorizontalCenter(btnWidth)
-        Dim btnY = GetVerticalCenter(btnHeight)
+        Dim buttonX = GetHorizontalCenter(buttonWidth)
+        Dim buttonY = GetVerticalCenter(buttonHeight)
 
-        ' Resume button
         buttons.Add(New TextButton(
-            btnX, btnY,
-            btnWidth, btnHeight,
+            buttonX, buttonY,
+            buttonWidth, buttonHeight,
             "Resume",
             Color.White,
             Color.DarkGreen,
@@ -46,16 +45,16 @@
         )
 
 
-        For Each b In buttons
-            b.Draw(g, mouseX, mouseY)
+        For Each button In buttons
+            button.Draw(g, mouseX, mouseY)
         Next
 
         previousScene.SetShouldDrawButtons(True)
     End Sub
 
     Public Overrides Sub HandleClick(mouseX As Integer, mouseY As Integer)
-        For Each b In buttons
-            b.HandleClick(mouseX, mouseY)
+        For Each button In buttons
+            button.HandleClick(mouseX, mouseY)
         Next
     End Sub
 End Class

@@ -3,6 +3,7 @@
     Private gridHeight As Integer
     Private board(,) As TetrominoType
 
+
     Public Sub New(gridWidth As Integer, gridHeight As Integer)
         Me.gridWidth = gridWidth
         Me.gridHeight = gridHeight
@@ -33,8 +34,8 @@
         Next
         Return False
     End Function
-    Public Function IsGameOver(upcomingPiece As TetrominoType) As Boolean
-        Dim upcomingTetromino As New Tetromino(upcomingPiece)
+    Public Function IsGameOver(upcomingPiece As TetrominoType, spawnPosition As Point) As Boolean
+        Dim upcomingTetromino As New Tetromino(upcomingPiece, spawnPosition)
         For Each relativePosition In upcomingTetromino.GetBlockRelativePositions
             Dim brickXPosition = upcomingTetromino.GetXPosition + relativePosition.X
             Dim brickYPosition = upcomingTetromino.GetYPosition + relativePosition.Y
@@ -58,25 +59,8 @@
 
             board(brickXPosition, brickYPosition) = currentTetromino.GetShapeType
         Next
-        'ClearLines()
-
-        'Dim upcomingPiece As TetrominoType = tetrominoBag.Peek
-        'If IsGameOver(upcomingPiece) Then
-        '    manager.ChangeScene(New GameOverScene(screenWidth, screenHeight, manager, gameScore))
-
-        'Else
-        '    currentTetromino = New Tetromino(tetrominoBag.Dequeue)
-        'End If
-
-
-        'If tetrominoBag.IsEmpty Then
-        '    RefillBag()
-        'End If
-
-        'hasHeldThisTurn = False
     End Sub
     Public Function ClearLines()
-
         Dim linesCleared As Integer = 0
         For y As Integer = 0 To gridHeight
             Dim isLineClear As Boolean = True

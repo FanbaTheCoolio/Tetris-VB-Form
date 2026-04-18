@@ -2,9 +2,9 @@
     Protected bounds As Rectangle
     Protected action As Action
     Protected currentScale As Double = 1.0
-    Private Const initialScale As Double = 1.0
-    Private Const hoverScale As Double = 1.1
-    Private Const scaleSpeed As Double = 0.1
+    Private Const INITIAL_SCALE As Double = 1.0
+    Private Const HOVER_SCALE As Double = 1.1
+    Private Const SCALE_SPEED As Double = 0.1
 
 
     Public Sub New(x As Integer, y As Integer, width As Integer, height As Integer, action As Action)
@@ -22,9 +22,9 @@
     End Sub
 
     Protected Sub UpdateScale(isHover As Boolean)
-        Dim targetScale = If(isHover, hoverScale, initialScale)
+        Dim targetScale = If(isHover, HOVER_SCALE, INITIAL_SCALE)
 
-        currentScale += (targetScale - currentScale) * scaleSpeed
+        currentScale += (targetScale - currentScale) * SCALE_SPEED
     End Sub
 
     Protected Function GetScaledBounds() As Rectangle

@@ -1,19 +1,19 @@
 ﻿Public Class Tetromino
-    Private xPosition, yPosition As Integer
+    Private position As Point
     Private shapeType As TetrominoType
     Private blockRelativePositions() As Block
     Private centreOfRotation As Block
 
     ' Private shape  i'll do this later since its gonna be awkward.
-    Sub New(shapeType As TetrominoType)
+    Sub New(shapeType As TetrominoType, position As Point)
 
-        xPosition = 5
-        yPosition = 0
+        Me.position.X = position.X
+        Me.position.Y = position.Y
         Me.shapeType = shapeType
 
         SelectPieceType()
     End Sub
-    Function GetPotentialRotation(direction As DirectionType)
+    Public Function GetPotentialRotation(direction As DirectionType)
         Dim rotationRelativePosition(blockRelativePositions.Length) As Block
         Dim rightMultiplier As Integer = 1
         Dim leftMultiplier As Integer = 1
@@ -38,7 +38,7 @@
 
         Return rotationRelativePosition
     End Function
-    Sub Rotate(direction As DirectionType)
+    Public Sub Rotate(direction As DirectionType)
         Dim rightMultiplier As Integer = 1
         Dim leftMultiplier As Integer = 1
         If direction = DirectionType.Right Then
@@ -58,13 +58,13 @@
             blockRelativePositions(i).Y = newY + centreOfRotation.Y
         Next
     End Sub
-    Function GetBlockRelativePositions()
+    Public Function GetBlockRelativePositions()
         Return blockRelativePositions
     End Function
-    Function GetCentreOfRotation()
+    Private Function GetCentreOfRotation()
         Return centreOfRotation
     End Function
-    Sub SelectPieceType()
+    Private Sub SelectPieceType()
 
         Select Case shapeType
             Case TetrominoType.I_Piece
@@ -103,23 +103,23 @@
     End Sub
 
     Private Sub MoveLeft()
-        xPosition -= 1
+        position.X -= 1
     End Sub
     Private Sub MoveRight()
-        xPosition += 1
+        position.X += 1
     End Sub
     Public Function GetShapeType() As TetrominoType
         Return shapeType
     End Function
 
     Public Function GetXPosition() As Integer
-        Return xPosition
+        Return position.X
     End Function
     Public Function GetYPosition() As Integer
-        Return yPosition
+        Return position.Y
     End Function
 
     Public Sub Update()
-        yPosition += 1
+        position.Y += 1
     End Sub
 End Class
