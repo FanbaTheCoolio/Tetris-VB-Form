@@ -1,5 +1,5 @@
 ﻿Public Class StartScene
-    Inherits BaseScene
+    Inherits Scene
     Public Sub New(screenWidth As Integer, screenHeight As Integer, sceneManager As SceneManager)
         MyBase.New(screenWidth, screenHeight, sceneManager)
 

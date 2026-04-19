@@ -1,5 +1,5 @@
 ﻿Public Class GameScene
-    Inherits BaseScene
+    Inherits Scene
 
 #Region "Attributes"
 

@@ -1,6 +1,6 @@
 ﻿
 Public Class SceneManager
-    Private currentScene As InterfaceScene
+    Private currentScene As Scene
     Private screenWidth, screenHeight As Integer
     Public Sub New(screenWidth As Integer, screenHeight As Integer)
         Me.screenHeight = screenHeight
@@ -9,7 +9,7 @@ Public Class SceneManager
         currentScene = New StartScene(screenWidth, screenHeight, Me)
     End Sub
 
-    Public Sub ChangeScene(newScene As InterfaceScene)
+    Public Sub ChangeScene(newScene As Scene)
         currentScene = newScene
     End Sub
 

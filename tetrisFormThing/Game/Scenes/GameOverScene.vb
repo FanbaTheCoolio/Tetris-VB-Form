@@ -1,5 +1,5 @@
 ﻿Public Class GameOverScene
-    Inherits BaseScene
+    Inherits Scene
 
     Private finalScore As Integer
 

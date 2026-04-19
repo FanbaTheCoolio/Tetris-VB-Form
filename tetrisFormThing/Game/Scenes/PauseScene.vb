@@ -1,5 +1,5 @@
 ﻿Public Class PauseScene
-    Inherits BaseScene
+    Inherits Scene
     Private previousScene As GameScene
     Public Sub New(screenWidth As Integer, screenHeight As Integer, sceneManager As SceneManager, previousScene As GameScene)
         MyBase.New(screenWidth, screenHeight, sceneManager)

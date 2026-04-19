@@ -1,9 +1,9 @@
-﻿Public MustInherit Class BaseScene
+﻿Public MustInherit Class Scene
 
-    Implements InterfaceScene
-        Protected manager As SceneManager
-        Protected buttons As New List(Of BaseButton)
-        Protected screenWidth, screenHeight As Integer
+
+    Protected manager As SceneManager
+    Protected buttons As New List(Of BaseButton)
+    Protected screenWidth, screenHeight As Integer
 
     Public Sub New(screenWidth As Integer, screenHeight As Integer, manager As SceneManager)
         Me.screenWidth = screenWidth
@@ -11,11 +11,11 @@
         Me.manager = manager
     End Sub
 
-    Public MustOverride Sub Update(keys As Dictionary(Of Integer, Boolean)) Implements InterfaceScene.Update
+    Public MustOverride Sub Update(keys As Dictionary(Of Integer, Boolean))
 
-    Public MustOverride Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer) Implements InterfaceScene.Draw
+    Public MustOverride Sub Draw(g As Graphics, mouseX As Integer, mouseY As Integer)
 
-    Public MustOverride Sub HandleClick(mouseX As Integer, mouseY As Integer) Implements InterfaceScene.HandleClick
+    Public MustOverride Sub HandleClick(mouseX As Integer, mouseY As Integer)
 
     Protected Function GetHorizontalCenter(width As Integer) As Integer
         Return (screenWidth - width) \ 2
