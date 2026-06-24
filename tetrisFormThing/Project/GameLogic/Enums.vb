@@ -39,3 +39,13 @@ Public Enum DirectionType
     Left
     Right
 End Enum
+Public Enum SoundEffect
+    Rotate
+    LineClear
+    HardDrop
+    Hold
+    GameOver
+End Enum
+Public Enum MusicTrack
+    GameTheme
+End Enum

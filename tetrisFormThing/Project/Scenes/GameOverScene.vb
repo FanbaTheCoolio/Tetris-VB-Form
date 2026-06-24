@@ -4,8 +4,8 @@
     Private finalScore As Integer
 
 
-    Public Sub New(screenWidth As Integer, screenHeight As Integer, manager As SceneManager, score As Integer)
-        MyBase.New(screenWidth, screenHeight, manager)
+    Public Sub New(screenWidth As Integer, screenHeight As Integer, manager As SceneManager, score As Integer, audioManager As AudioManager)
+        MyBase.New(screenWidth, screenHeight, manager, audioManager)
 
         Me.finalScore = score
 
@@ -24,7 +24,7 @@
             Color.White,
             Color.DarkBlue,
             Color.Blue,
-            Sub() manager.ChangeScene(New GameScene(screenWidth, screenHeight, manager))
+            Sub() manager.ChangeScene(New GameScene(screenWidth, screenHeight, manager, audioManager))
         ))
 
         buttons.Add(New TextButton(
@@ -36,7 +36,7 @@
             Color.White,
             Color.DarkRed,
             Color.Red,
-            Sub() manager.ChangeScene(New StartScene(screenWidth, screenHeight, manager))
+            Sub() manager.ChangeScene(New StartScene(screenWidth, screenHeight, manager, audioManager))
         ))
     End Sub
     Public Overrides Sub Update(keys As Dictionary(Of Integer, Boolean))

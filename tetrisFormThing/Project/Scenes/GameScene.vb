@@ -77,8 +77,8 @@
 #End Region
 
 
-    Public Sub New(screenWidth As Integer, screenHeight As Integer, sceneManager As SceneManager)
-        MyBase.New(screenWidth, screenHeight, sceneManager)
+    Public Sub New(screenWidth As Integer, screenHeight As Integer, sceneManager As SceneManager, audioManager As AudioManager)
+        MyBase.New(screenWidth, screenHeight, sceneManager, audioManager)
 
         Randomize()
         RefillBag()
@@ -107,8 +107,8 @@
                     pauseButtonCentreY,
                     pauseButtonWidth,
                     pauseButtonHeight,
-                    My.Resources.Resource1.Pause,
-                    Sub() manager.ChangeScene(New PauseScene(screenWidth, screenHeight, manager, Me))
+                    Image.FromFile(spritePause),
+                    Sub() manager.ChangeScene(New PauseScene(screenWidth, screenHeight, manager, Me, audioManager))
                         ))
 
 
@@ -279,7 +279,7 @@
 
         Dim upcomingPiece As TetrominoType = tetrominoBag.Peek
         If board.IsGameOver(upcomingPiece, SPAWN_POSITION) Then
-            manager.ChangeScene(New GameOverScene(screenWidth, screenHeight, manager, gameScore))
+            manager.ChangeScene(New GameOverScene(screenWidth, screenHeight, manager, gameScore, audioManager))
         Else
             SpawnNextTetrominoPiece()
         End If

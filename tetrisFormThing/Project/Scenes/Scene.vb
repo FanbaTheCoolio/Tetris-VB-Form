@@ -4,11 +4,13 @@
     Protected manager As SceneManager
     Protected buttons As New List(Of BaseButton)
     Protected screenWidth, screenHeight As Integer
+    Protected audioManager As AudioManager
 
-    Public Sub New(screenWidth As Integer, screenHeight As Integer, manager As SceneManager)
+    Public Sub New(screenWidth As Integer, screenHeight As Integer, manager As SceneManager, audioManager As AudioManager)
         Me.screenWidth = screenWidth
         Me.screenHeight = screenHeight
         Me.manager = manager
+        Me.audioManager = audioManager
     End Sub
 
     Public MustOverride Sub Update(keys As Dictionary(Of Integer, Boolean))

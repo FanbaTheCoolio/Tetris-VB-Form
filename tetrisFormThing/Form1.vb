@@ -49,7 +49,7 @@ Public Class Form1
 
 
     '1   Cyan (I piece)
-    '2   Yellow (O piece)
+    '2   Yellow (O piece)???
     '3   Purple (T piece)
     '4   Orange (L piece)
     '5   Blue (J piece)

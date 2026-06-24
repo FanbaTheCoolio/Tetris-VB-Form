@@ -2,11 +2,12 @@
 Public Class SceneManager
     Private currentScene As Scene
     Private screenWidth, screenHeight As Integer
+    Private audioManager As New AudioManager
     Public Sub New(screenWidth As Integer, screenHeight As Integer)
         Me.screenHeight = screenHeight
         Me.screenWidth = screenWidth
 
-        currentScene = New StartScene(screenWidth, screenHeight, Me)
+        currentScene = New StartScene(screenWidth, screenHeight, Me, audioManager)
     End Sub
 
     Public Sub ChangeScene(newScene As Scene)

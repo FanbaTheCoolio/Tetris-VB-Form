@@ -1,8 +1,8 @@
 ﻿Public Class PauseScene
     Inherits Scene
     Private previousScene As GameScene
-    Public Sub New(screenWidth As Integer, screenHeight As Integer, sceneManager As SceneManager, previousScene As GameScene)
-        MyBase.New(screenWidth, screenHeight, sceneManager)
+    Public Sub New(screenWidth As Integer, screenHeight As Integer, sceneManager As SceneManager, previousScene As GameScene, audioManager As AudioManager)
+        MyBase.New(screenWidth, screenHeight, sceneManager, audioManager)
 
         Me.previousScene = previousScene
 
@@ -11,7 +11,8 @@
 
         Dim buttonX = GetHorizontalCenter(buttonWidth)
         Dim buttonY = GetVerticalCenter(buttonHeight)
-
+        ' THIS PRACTISE IS DISGUSTING!!!!!! MAKE A UI MANAGER TO HANDLE GAP SPACING LAYOUTS PLEAAAASE
+        Dim gapSpacing As Integer = GetRelativeY(0.15)
         buttons.Add(New TextButton(
             buttonX, buttonY,
             buttonWidth, buttonHeight,
@@ -21,6 +22,15 @@
             Color.Green,
             Sub() manager.ChangeScene(previousScene)
         ))
+
+        buttons.Add(New TextButton(
+                    buttonX, buttonY + gapSpacing,
+            buttonWidth, buttonHeight,
+            "Retry",
+            Color.White,
+            Color.MediumPurple,
+            Color.Purple,
+Sub() manager.ChangeScene(New GameScene(screenWidth, screenHeight, sceneManager, audioManager))))
     End Sub
     Public Overrides Sub Update(keys As Dictionary(Of Integer, Boolean))
 
