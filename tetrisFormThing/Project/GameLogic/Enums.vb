@@ -45,6 +45,7 @@ Public Enum SoundEffect
     HardDrop
     Hold
     GameOver
+    ButtonClick
 End Enum
 Public Enum MusicTrack
     GameTheme

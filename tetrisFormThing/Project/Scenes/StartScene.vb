@@ -10,7 +10,18 @@
         Dim startButtonYPosition As Integer = GetVerticalCenter(startButtonHeight)
 
 
-        buttons.Add(New TextButton(startButtonXPosition, startButtonYPosition, startButtonWidth, startButtonHeight, "Start", Color.Black, Color.Blue, Color.DarkBlue, Sub() sceneManager.ChangeScene(New GameScene(screenWidth, screenHeight, sceneManager, audioManager))))
+        buttons.Add(New TextButton(
+                    startButtonXPosition,
+                    startButtonYPosition,
+                    startButtonWidth,
+                    startButtonHeight,
+                    "Start",
+                    Color.Black,
+                    Color.Blue,
+                    Color.DarkBlue,
+                    Sub() sceneManager.ChangeScene(New GameScene(screenWidth, screenHeight, sceneManager, audioManager)),
+                    audioManager
+                        ))
     End Sub
     Public Overrides Sub Update(keys As Dictionary(Of Integer, Boolean))
 

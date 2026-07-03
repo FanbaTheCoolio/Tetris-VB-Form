@@ -5,9 +5,10 @@
 
     Public Sub New(x As Integer, y As Integer, width As Integer, height As Integer,
            image As Image,
-           action As Action)
+           action As Action,
+                   audioManager As AudioManager)
 
-        MyBase.New(x, y, width, height, action)
+        MyBase.New(x, y, width, height, action, audioManager)
         Me.image = image
     End Sub
 

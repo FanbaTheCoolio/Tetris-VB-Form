@@ -10,8 +10,9 @@
     Public Sub New(x As Integer, y As Integer, width As Integer, height As Integer,
          text As String, textColour As Color,
          baseColour As Color, hoverColour As Color,
-         action As Action)
-        MyBase.New(x, y, width, height, action)
+         action As Action,
+                   audioManager As AudioManager)
+        MyBase.New(x, y, width, height, action, audioManager)
 
         Me.textColour = textColour
         Me.baseColour = baseColour

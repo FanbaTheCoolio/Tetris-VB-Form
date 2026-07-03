@@ -20,7 +20,8 @@
             Color.White,
             Color.DarkGreen,
             Color.Green,
-            Sub() manager.ChangeScene(previousScene)
+            Sub() manager.ChangeScene(previousScene),
+            audioManager
         ))
 
         buttons.Add(New TextButton(
@@ -30,7 +31,9 @@
             Color.White,
             Color.MediumPurple,
             Color.Purple,
-Sub() manager.ChangeScene(New GameScene(screenWidth, screenHeight, sceneManager, audioManager))))
+Sub() manager.ChangeScene(New GameScene(screenWidth, screenHeight, sceneManager, audioManager)),
+audioManager
+    ))
     End Sub
     Public Overrides Sub Update(keys As Dictionary(Of Integer, Boolean))
 

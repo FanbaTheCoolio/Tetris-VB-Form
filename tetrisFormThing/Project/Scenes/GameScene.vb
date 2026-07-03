@@ -108,7 +108,8 @@
                     pauseButtonWidth,
                     pauseButtonHeight,
                     Image.FromFile(spritePause),
-                    Sub() manager.ChangeScene(New PauseScene(screenWidth, screenHeight, manager, Me, audioManager))
+                    Sub() manager.ChangeScene(New PauseScene(screenWidth, screenHeight, manager, Me, audioManager)),
+                    audioManager
                         ))
 
 

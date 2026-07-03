@@ -9,6 +9,12 @@ Public Class AudioManager
     Private currentMusicOutput As WaveOutEvent
     Private currentMusicReader As AudioFileReader
 
+    Private sfxVolume As Double = 1.0F
+    Private musicVolume As Double = 1.0F
+
+    Public Sub New()
+        LoadSFX(SoundEffect.ButtonClick, Assets.sfxClick)
+    End Sub
     Private Sub LoadSFX(sfx As SoundEffect, fileLocation As String)
         sfxPaths(sfx) = fileLocation
     End Sub
@@ -20,7 +26,7 @@ Public Class AudioManager
         If Not sfxPaths.ContainsKey(sfx) Then Exit Sub
 
         Dim reader As New AudioFileReader(sfxPaths(sfx))
-        reader.Volume = 1
+        reader.Volume = sfxVolume
 
         Dim output As New WaveOutEvent()
         output.Init(reader)
@@ -40,7 +46,7 @@ Public Class AudioManager
         StopMusic()
 
         currentMusicReader = New AudioFileReader(musicPaths(track))
-        currentMusicReader.Volume = 1
+        currentMusicReader.Volume = musicVolume
 
         currentMusicOutput = New WaveOutEvent()
         currentMusicOutput.Init(currentMusicReader)

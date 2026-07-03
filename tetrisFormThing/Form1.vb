@@ -14,7 +14,7 @@ Imports System.Windows.Forms.AxHost
 Imports System.Windows.Forms.Design
 Imports System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel
 Imports NAudio.Wave
-Imports tetrisFormThing.Form1
+
 
 
 Public Class Form1

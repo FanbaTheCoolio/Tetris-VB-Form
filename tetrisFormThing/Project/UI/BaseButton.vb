@@ -5,19 +5,20 @@
     Private Const INITIAL_SCALE As Double = 1.0
     Private Const HOVER_SCALE As Double = 1.1
     Private Const SCALE_SPEED As Double = 0.1
+    Private ReadOnly audioManager As AudioManager
 
-
-    Public Sub New(x As Integer, y As Integer, width As Integer, height As Integer, action As Action)
+    Public Sub New(x As Integer, y As Integer, width As Integer, height As Integer, action As Action, audioManager As AudioManager)
         bounds = New Rectangle(x, y, width, height)
 
-
+        Me.audioManager = audioManager
         Me.action = action
     End Sub
 
     Public Sub HandleClick(mouseX As Integer, mouseY As Integer)
         If bounds.Contains(mouseX, mouseY) Then
             action.Invoke()
-            'audioController.Play("ClickSound")
+            'SceneManager.audioManager.PlaySFX(SoundEffect.ButtonClick)
+            audioManager.PlaySFX(SoundEffect.ButtonClick)
         End If
     End Sub
 
