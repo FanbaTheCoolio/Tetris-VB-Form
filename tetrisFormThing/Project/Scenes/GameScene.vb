@@ -18,9 +18,22 @@
     Private currentTetromino As Tetromino
     Private tetrominoBag As New CyclicQueue(Of TetrominoType)(7)
     Private ReadOnly SPAWN_POSITION As New Point(5, 0)
-    Private Const TETROMINO_UPDATE_INTERVAL As Integer = 30
-    Private tetrominoDelayCounter As Integer = 0
+    Private tetrominoGravityInterval As Integer = 1
+    Private tetrominoGravityTimer As New Stopwatch()
+    'Private tetrominoDelayCounter As Integer = 0
 
+
+    Private ReadOnly dropTimes() As Double = {
+    0.8,
+    0.72,
+    0.63,
+    0.55,
+    0.47,
+    0.38,
+    0.3,
+    0.22,
+    0.13,
+    0.1}
 #End Region
 
 
@@ -41,7 +54,10 @@
     Private gameScore As Integer = 0
     Private heldPiece As TetrominoType = TetrominoType.None
     Private hasHeldThisTurn As Boolean = False
-
+    Private completedLines As Integer = 0
+    Private Const lineLevelupMultiple As Integer = 1
+    Private level As Integer = 1
+    Private linesNeededToLevelUp As Integer = lineLevelupMultiple
 #End Region
 
 
@@ -98,7 +114,7 @@
         Dim pauseButtonWidth As Integer = GetRelativeX(0.2)
         Dim pauseButtonHeight As Integer = GetRelativeY(0.08)
 
-        Dim pauseButtonCentreX As Integer = GetRelativeX(0.05)
+        Dim pauseButtonCentreX As Integer = GetRelativeX(0.025)
         Dim pauseButtonCentreY As Integer = GetRelativeY(0.05)
 
 
@@ -117,6 +133,7 @@
         scorePosition.X = pauseButtonCentreX
         scorePosition.Y = pauseButtonCentreY + (pauseButtonHeight + SCORE_SPACING)
 
+        tetrominoGravityTimer.Start()
     End Sub
     Public Sub ResetKeyDelay()
         KeyDelayCounter = KeyRepeatInterval
@@ -127,9 +144,9 @@
         GameUpdate()
     End Sub
     Private Sub GameUpdate()
-        tetrominoDelayCounter += 1
+        'tetrominoDelayCounter += 1
 
-        If tetrominoDelayCounter >= TETROMINO_UPDATE_INTERVAL Or softDropDebounce Then
+        If tetrominoGravityTimer.Elapsed.TotalSeconds >= dropTimes(level) Or softDropDebounce Then
             softDropDebounce = False
 
             If board.ShouldBeLocked(currentTetromino) Then
@@ -138,7 +155,8 @@
             End If
 
             currentTetromino.Update()
-            tetrominoDelayCounter = 0
+            tetrominoGravityTimer.Restart()
+            'tetrominoDelayCounter = 0
         End If
     End Sub
 
@@ -274,8 +292,16 @@
 #Region "Core Mechanics"
     Private Sub LockPiece()
         board.LockPiece(currentTetromino)
-        Dim currentScore = board.ClearLines()
-        addScore(currentScore)
+        Dim currentLinesCompleted = board.ClearLines()
+        Debug.WriteLine(currentLinesCompleted)
+
+        If currentLinesCompleted <> 0 Then
+            completedLines += currentLinesCompleted
+            UpdateGravity()
+        End If
+
+
+        AddScore(currentLinesCompleted)
 
 
         Dim upcomingPiece As TetrominoType = tetrominoBag.Peek
@@ -289,7 +315,17 @@
 
         hasHeldThisTurn = False
     End Sub
+    Private Sub UpdateGravity()
+        If completedLines > linesNeededToLevelUp Then
+            linesNeededToLevelUp += lineLevelupMultiple
 
+            If level < dropTimes.Length Then
+                level += 1
+
+
+            End If
+        End If
+    End Sub
     Private Sub SpawnNextTetrominoPiece()
         currentTetromino = New Tetromino(tetrominoBag.Dequeue, SPAWN_POSITION)
         If tetrominoBag.IsEmpty Then
@@ -323,7 +359,7 @@
         tetrominoBag.Randomise()
     End Sub
 
-    Private Sub addScore(linesCleared As Integer)
+    Private Sub AddScore(linesCleared As Integer)
         Select Case linesCleared
             Case 1 : gameScore += 100
             Case 2 : gameScore += 300
@@ -392,9 +428,9 @@
 
     Private Sub DrawScore(g As Graphics)
         Dim scoreString As String = "Score : " & gameScore
-        Dim scoreFont As Font = New Font("Consolas", 20, FontStyle.Bold)
+        Dim scoreFont As Font = New Font("Consolas", 18, FontStyle.Bold)
 
-        g.DrawString(scoreString, scoreFont, New SolidBrush(Color.Black), scorePosition.X, scorePosition.Y)
+        g.DrawString(scoreString, scoreFont, New SolidBrush(Color.Yellow), scorePosition.X, scorePosition.Y)
     End Sub
     Private Sub DrawBorders(g As Graphics)
         g.FillRectangle(New SolidBrush(BORDER_COLOUR), 0, 0, gridStartPositionX, screenHeight)
