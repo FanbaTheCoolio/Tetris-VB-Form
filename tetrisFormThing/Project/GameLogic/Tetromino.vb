@@ -3,6 +3,29 @@
     Private shapeType As TetrominoType
     Private blockRelativePositions() As Block
     Private centreOfRotation As Block
+    Private orientation As Rotation = Rotation.Spawn
+
+    Private standardKicks As New Dictionary(Of String, Point()) From {
+    {"0->1", New Point() {New Point(0, 0), New Point(-1, 0), New Point(-1, 1), New Point(0, -2), New Point(-1, -2)}},
+    {"1->0", New Point() {New Point(0, 0), New Point(1, 0), New Point(1, -1), New Point(0, 2), New Point(1, 2)}},
+    {"1->2", New Point() {New Point(0, 0), New Point(1, 0), New Point(1, -1), New Point(0, 2), New Point(1, 2)}},
+    {"2->1", New Point() {New Point(0, 0), New Point(-1, 0), New Point(-1, 1), New Point(0, -2), New Point(-1, -2)}},
+    {"2->3", New Point() {New Point(0, 0), New Point(1, 0), New Point(1, 1), New Point(0, -2), New Point(1, -2)}},
+    {"3->2", New Point() {New Point(0, 0), New Point(-1, 0), New Point(-1, -1), New Point(0, 2), New Point(-1, 2)}},
+    {"3->0", New Point() {New Point(0, 0), New Point(-1, 0), New Point(-1, 1), New Point(0, -2), New Point(-1, -2)}},
+    {"0->3", New Point() {New Point(0, 0), New Point(1, 0), New Point(1, -1), New Point(0, 2), New Point(1, 2)}}
+}
+
+    Private iKick As New Dictionary(Of String, Point()) From {
+    {"0->1", New Point() {New Point(0, 0), New Point(-2, 0), New Point(1, 0), New Point(-2, -1), New Point(1, 2)}},
+    {"1->0", New Point() {New Point(0, 0), New Point(2, 0), New Point(-1, 0), New Point(2, 1), New Point(-1, -2)}},
+    {"1->2", New Point() {New Point(0, 0), New Point(-1, 0), New Point(2, 0), New Point(-1, 2), New Point(2, -1)}},
+    {"2->1", New Point() {New Point(0, 0), New Point(1, 0), New Point(-2, 0), New Point(1, -2), New Point(-2, 1)}},
+    {"2->3", New Point() {New Point(0, 0), New Point(2, 0), New Point(-1, 0), New Point(2, 1), New Point(-1, -2)}},
+    {"3->2", New Point() {New Point(0, 0), New Point(-2, 0), New Point(1, 0), New Point(-2, -1), New Point(1, 2)}},
+    {"3->0", New Point() {New Point(0, 0), New Point(1, 0), New Point(-2, 0), New Point(1, -2), New Point(-2, 1)}},
+    {"0->3", New Point() {New Point(0, 0), New Point(-1, 0), New Point(2, 0), New Point(-1, 2), New Point(2, -1)}}
+}
 
     ' Private shape  i'll do this later since its gonna be awkward.
     Sub New(shapeType As TetrominoType, position As Point)
@@ -13,6 +36,12 @@
 
         SelectPieceType()
     End Sub
+    'Private Function GetTransition(originalRotation As Rotation, newRotation As Rotation) As String
+    '    Return $"{originalRotation}->{newRotation}"
+    'End Function
+    Public Function GetCurrentOrientation() As Rotation
+        Return orientation
+    End Function
     Public Function GetPotentialRotation(direction As DirectionType)
         Dim rotationRelativePosition(blockRelativePositions.Length) As Block
         Dim rightMultiplier As Integer = 1
@@ -38,14 +67,45 @@
 
         Return rotationRelativePosition
     End Function
-    Public Sub Rotate(direction As DirectionType)
+
+    Public Function GetNewRotation(direction As DirectionType) As Rotation
+
+        If direction = DirectionType.Right Then
+            Return (orientation + 1) Mod 4
+        Else
+            Return (orientation + 3) Mod 4
+        End If
+
+    End Function
+    Public Function GetKicks(
+        newRotation As Rotation) As Point()
+
+        Dim key As String = CInt(orientation).ToString() & "->" & CInt(newRotation).ToString()
+
+        Select Case shapeType
+
+            Case TetrominoType.I_Piece
+                Return iKick(key)
+
+            Case Else
+                Return standardKicks(key)
+        End Select
+
+    End Function
+    Public Sub Rotate(direction As DirectionType, kick As Point)
         Dim rightMultiplier As Integer = 1
         Dim leftMultiplier As Integer = 1
         If direction = DirectionType.Right Then
+
             rightMultiplier *= -1
         Else
+
             leftMultiplier *= -1
         End If
+
+        position.X += kick.X
+        position.Y += kick.Y
+
         For i As Integer = 0 To blockRelativePositions.Length - 1
             Dim currentblock = blockRelativePositions(i)
             Dim relativeX = currentblock.X - centreOfRotation.X
@@ -57,6 +117,7 @@
             blockRelativePositions(i).X = newX + centreOfRotation.X
             blockRelativePositions(i).Y = newY + centreOfRotation.Y
         Next
+        orientation = GetNewRotation(direction)
     End Sub
     Public Function GetBlockRelativePositions()
         Return blockRelativePositions

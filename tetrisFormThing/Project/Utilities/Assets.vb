@@ -1,7 +1,7 @@
 ﻿Imports System.IO
 
 Public Module Assets
-    Private ReadOnly root As String = "C:\Users\faheem\source\repos\tetrisFormThing\tetrisFormThing\Resources\"
+    Private ReadOnly root As String = Path.Combine(Application.StartupPath, "Resources")
     Private ReadOnly audioRoot As String = Path.Combine(root, "Audio")
     Private ReadOnly spriteRoot As String = Path.Combine(root, "Sprites")
     Private ReadOnly musicRoot As String = Path.Combine(audioRoot, "Music")

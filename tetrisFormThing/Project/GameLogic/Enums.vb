@@ -50,3 +50,9 @@ End Enum
 Public Enum MusicTrack
     GameTheme
 End Enum
+Public Enum Rotation
+    Spawn = 0
+    Right = 1
+    Reverse = 2
+    Left = 3
+End Enum

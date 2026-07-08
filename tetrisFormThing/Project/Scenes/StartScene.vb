@@ -22,6 +22,8 @@
                     Sub() sceneManager.ChangeScene(New GameScene(screenWidth, screenHeight, sceneManager, audioManager)),
                     audioManager
                         ))
+
+        Debug.WriteLine(Application.StartupPath)
     End Sub
     Public Overrides Sub Update(keys As Dictionary(Of Integer, Boolean))
 

@@ -209,6 +209,7 @@
         End While
     End Sub
     Private Sub AttemptLeftMovement()
+
         Dim canMoveLeft As Boolean = True
         For Each relativePosition In currentTetromino.GetBlockRelativePositions
             Dim brickXPosition = currentTetromino.GetXPosition + relativePosition.X
@@ -245,39 +246,51 @@
     End Sub
     Private Sub AttemptRightRotation()
         If currentTetromino.GetShapeType = TetrominoType.O_Piece Then Return
+        For Each kick In currentTetromino.GetKicks(currentTetromino.GetNewRotation(DirectionType.Right))
+            Dim canRotateRight As Boolean = True
 
-        Dim canRotateRight As Boolean = True
+            Dim kickOffsetX = currentTetromino.GetXPosition + kick.X
+            Dim kickOffsetY = currentTetromino.GetYPosition + kick.Y
 
-        For Each relativePosition In currentTetromino.GetPotentialRotation(DirectionType.Right)
-            Dim brickXPosition = currentTetromino.GetXPosition + relativePosition.X
-            Dim brickYPosition = currentTetromino.GetYPosition + relativePosition.Y
+            For Each relativePosition In currentTetromino.GetPotentialRotation(DirectionType.Right)
+                Dim brickXPosition = kickOffsetX + relativePosition.X
+                Dim brickYPosition = kickOffsetY + relativePosition.Y
 
-            If Not board.IsValidPosition(brickXPosition, brickYPosition) Then
-                canRotateRight = False
+                If Not board.IsValidPosition(brickXPosition, brickYPosition) Then
+                    canRotateRight = False
+                End If
+            Next
+            If canRotateRight Then
+                currentTetromino.Rotate(DirectionType.Right, kick)
+
+                Exit Sub
             End If
         Next
-        If canRotateRight Then
-            currentTetromino.Rotate(DirectionType.Right)
-        End If
+
     End Sub
 
     Private Sub AttemptLeftRotation()
         If currentTetromino.GetShapeType = TetrominoType.O_Piece Then Return
+        For Each kick In currentTetromino.GetKicks(currentTetromino.GetNewRotation(DirectionType.Left))
+            Dim canRotateRight As Boolean = True
 
-        Dim canRotateRight As Boolean = True
+            Dim kickOffsetX = currentTetromino.GetXPosition + kick.X
+            Dim kickOffsetY = currentTetromino.GetYPosition + kick.Y
 
-        For Each relativePosition In currentTetromino.GetPotentialRotation(DirectionType.Left)
-            Dim brickXPosition = currentTetromino.GetXPosition + relativePosition.X
-            Dim brickYPosition = currentTetromino.GetYPosition + relativePosition.Y
+            For Each relativePosition In currentTetromino.GetPotentialRotation(DirectionType.Left)
+                Dim brickXPosition = kickOffsetX + relativePosition.X
+                Dim brickYPosition = kickOffsetY + relativePosition.Y
 
-            If Not board.IsValidPosition(brickXPosition, brickYPosition) Then
-                canRotateRight = False
+                If Not board.IsValidPosition(brickXPosition, brickYPosition) Then
+                    canRotateRight = False
 
+                End If
+            Next
+            If canRotateRight Then
+                currentTetromino.Rotate(DirectionType.Left, kick)
+                Exit Sub
             End If
         Next
-        If canRotateRight Then
-            currentTetromino.Rotate(DirectionType.Left)
-        End If
     End Sub
     Public Overrides Sub HandleClick(mouseX As Integer, mouseY As Integer)
         For Each button In buttons
