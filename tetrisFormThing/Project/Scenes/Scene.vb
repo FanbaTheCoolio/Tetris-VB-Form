@@ -4,7 +4,7 @@
     Protected manager As SceneManager
     Protected buttons As New List(Of BaseButton)
     Protected screenWidth, screenHeight As Integer
-    Protected audioManager As AudioManager
+    Protected ReadOnly audioManager As AudioManager
 
     Public Sub New(screenWidth As Integer, screenHeight As Integer, manager As SceneManager, audioManager As AudioManager)
         Me.screenWidth = screenWidth

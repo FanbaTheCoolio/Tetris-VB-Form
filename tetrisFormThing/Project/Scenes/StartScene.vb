@@ -9,6 +9,7 @@
         Dim startButtonXPosition As Integer = GetHorizontalCenter(startButtonWidth)
         Dim startButtonYPosition As Integer = GetVerticalCenter(startButtonHeight)
 
+        audioManager.PlayMusic(MusicTrack.titleTrack)
 
         buttons.Add(New TextButton(
                     startButtonXPosition,
@@ -24,6 +25,7 @@
                         ))
 
         Debug.WriteLine(Application.StartupPath)
+
     End Sub
     Public Overrides Sub Update(keys As Dictionary(Of Integer, Boolean))
 

@@ -143,10 +143,10 @@
             Case TetrominoType.Z_Piece
                 blockRelativePositions = {New Block(-1, 0), New Block(0, 0), New Block(0, 1), New Block(1, 1)}
                 centreOfRotation = New Block(0, 1)
-            Case TetrominoType.J_Piece
+            Case TetrominoType.L_Piece
                 blockRelativePositions = {New Block(-1, 0), New Block(0, 0), New Block(1, 0), New Block(-1, 1)}
                 centreOfRotation = New Block(0, 0)
-            Case TetrominoType.L_Piece
+            Case TetrominoType.J_Piece
                 blockRelativePositions = {New Block(-1, 0), New Block(0, 0), New Block(1, 0), New Block(1, 1)}
                 centreOfRotation = New Block(0, 0)
         End Select

@@ -55,7 +55,7 @@
     Private heldPiece As TetrominoType = TetrominoType.None
     Private hasHeldThisTurn As Boolean = False
     Private completedLines As Integer = 0
-    Private Const lineLevelupMultiple As Integer = 1
+    Private Const lineLevelupMultiple As Integer = 5
     Private level As Integer = 1
     Private linesNeededToLevelUp As Integer = lineLevelupMultiple
 #End Region
@@ -100,8 +100,9 @@
         RefillBag()
         KeyDelayCounter = 0
 
-        currentTetromino = New Tetromino(tetrominoBag.Dequeue, SPAWN_POSITION)
 
+
+        currentTetromino = New Tetromino(tetrominoBag.Dequeue, SPAWN_POSITION)
 
 
 
@@ -134,6 +135,7 @@
         scorePosition.Y = pauseButtonCentreY + (pauseButtonHeight + SCORE_SPACING)
 
         tetrominoGravityTimer.Start()
+        audioManager.PlayMusic(MusicTrack.gameTrack)
     End Sub
     Public Sub ResetKeyDelay()
         KeyDelayCounter = KeyRepeatInterval
@@ -217,11 +219,12 @@
 
             If Not board.IsValidPosition(brickXPosition - 1, brickYPosition) Then
                 canMoveLeft = False
-
+                Exit For
             End If
         Next
         If canMoveLeft Then
             currentTetromino.MovePiece(DirectionType.Left)
+            audioManager.PlaySFX(SoundEffect.MovePiece)
         End If
 
     End Sub
@@ -233,11 +236,12 @@
 
             If Not board.IsValidPosition(brickXPosition + 1, brickYPosition) Then
                 canMoveRight = False
-
+                Exit For
             End If
         Next
         If canMoveRight Then
             currentTetromino.MovePiece(DirectionType.Right)
+            audioManager.PlaySFX(SoundEffect.MovePiece)
         End If
 
     End Sub
@@ -262,7 +266,7 @@
             Next
             If canRotateRight Then
                 currentTetromino.Rotate(DirectionType.Right, kick)
-
+                audioManager.PlaySFX(SoundEffect.RotatePiece)
                 Exit Sub
             End If
         Next
@@ -288,6 +292,7 @@
             Next
             If canRotateRight Then
                 currentTetromino.Rotate(DirectionType.Left, kick)
+                audioManager.PlaySFX(SoundEffect.RotatePiece)
                 Exit Sub
             End If
         Next
@@ -310,6 +315,7 @@
 
         If currentLinesCompleted <> 0 Then
             completedLines += currentLinesCompleted
+            audioManager.PlaySFX(SoundEffect.LineClear)
             UpdateGravity()
         End If
 
@@ -319,6 +325,7 @@
 
         Dim upcomingPiece As TetrominoType = tetrominoBag.Peek
         If board.IsGameOver(upcomingPiece, SPAWN_POSITION) Then
+            audioManager.PlaySFX(SoundEffect.GameOver)
             manager.ChangeScene(New GameOverScene(screenWidth, screenHeight, manager, gameScore, audioManager))
         Else
             SpawnNextTetrominoPiece()
@@ -332,7 +339,7 @@
         If completedLines > linesNeededToLevelUp Then
             linesNeededToLevelUp += lineLevelupMultiple
 
-            If level < dropTimes.Length Then
+            If level < (dropTimes.Length - 1) Then
                 level += 1
 
 

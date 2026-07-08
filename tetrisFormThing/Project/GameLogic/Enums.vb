@@ -42,13 +42,17 @@ End Enum
 Public Enum SoundEffect
     Rotate
     LineClear
+    MovePiece
+    RotatePiece
     HardDrop
     Hold
     GameOver
     ButtonClick
 End Enum
 Public Enum MusicTrack
-    GameTheme
+    gameTrack
+    titleTrack
+    gameOverTrack
 End Enum
 Public Enum Rotation
     Spawn = 0

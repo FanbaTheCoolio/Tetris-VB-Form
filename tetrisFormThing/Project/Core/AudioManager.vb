@@ -12,8 +12,20 @@ Public Class AudioManager
     Private sfxVolume As Double = 1.0F
     Private musicVolume As Double = 1.0F
 
+    Private isStoppingMusic As Boolean = False
+
+    Private musicStoppedHandler As EventHandler(Of StoppedEventArgs)
+
     Public Sub New()
         LoadSFX(SoundEffect.ButtonClick, Assets.sfxClick)
+        LoadSFX(SoundEffect.GameOver, Assets.gameOver)
+        LoadSFX(SoundEffect.RotatePiece, Assets.rotatePiece)
+        LoadSFX(SoundEffect.MovePiece, Assets.movePiece)
+        LoadSFX(SoundEffect.LineClear, Assets.lineClear)
+
+        LoadMusic(MusicTrack.gameOverTrack, Assets.gameOverTrack)
+        LoadMusic(MusicTrack.gameTrack, Assets.gameMusicTrack)
+        LoadMusic(MusicTrack.titleTrack, Assets.titleScreenTrack)
     End Sub
     Private Sub LoadSFX(sfx As SoundEffect, fileLocation As String)
         sfxPaths(sfx) = fileLocation
@@ -41,8 +53,6 @@ Public Class AudioManager
     End Sub
 
     Public Sub PlayMusic(track As MusicTrack)
-        If Not musicPaths.ContainsKey(track) Then Exit Sub
-
         StopMusic()
 
         currentMusicReader = New AudioFileReader(musicPaths(track))
@@ -51,29 +61,38 @@ Public Class AudioManager
         currentMusicOutput = New WaveOutEvent()
         currentMusicOutput.Init(currentMusicReader)
 
-        AddHandler currentMusicOutput.PlaybackStopped,
+
+        musicStoppedHandler =
             Sub()
-
                 PlayMusic(track)
-
             End Sub
+
+
+        AddHandler currentMusicOutput.PlaybackStopped, musicStoppedHandler
 
         currentMusicOutput.Play()
 
     End Sub
 
     Public Sub StopMusic()
-
         If currentMusicOutput IsNot Nothing Then
+            If musicStoppedHandler IsNot Nothing Then
+                RemoveHandler currentMusicOutput.PlaybackStopped, musicStoppedHandler
+                musicStoppedHandler = Nothing
+            End If
+
             currentMusicOutput.Stop()
             currentMusicOutput.Dispose()
             currentMusicOutput = Nothing
+
         End If
+
 
         If currentMusicReader IsNot Nothing Then
             currentMusicReader.Dispose()
             currentMusicReader = Nothing
         End If
-
     End Sub
+
+
 End Class

@@ -14,6 +14,7 @@
 
         Dim centerX = GetHorizontalCenter(btnWidth)
 
+        audioManager.PlayMusic(MusicTrack.gameOverTrack)
 
         buttons.Add(New TextButton(
             centerX,
