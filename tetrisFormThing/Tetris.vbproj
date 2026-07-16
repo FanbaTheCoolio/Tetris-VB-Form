@@ -9,9 +9,54 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Resources\**" />
-    <EmbeddedResource Remove="Resources\**" />
-    <None Remove="Resources\**" />
+    <None Remove="Resources\Audio\Music\gameOver.mp3" />
+    <None Remove="Resources\Audio\Music\gameTrack.mp3" />
+    <None Remove="Resources\Audio\Music\titleScreen.mp3" />
+    <None Remove="Resources\Audio\SFX\buttonClick.wav" />
+    <None Remove="Resources\Audio\SFX\gameOver.mp3" />
+    <None Remove="Resources\Audio\SFX\lineClear.wav" />
+    <None Remove="Resources\Audio\SFX\movePiece.wav" />
+    <None Remove="Resources\Audio\SFX\rotatePiece.wav" />
+    <None Remove="Resources\Sprites\Pause.png" />
+    <None Remove="Resources\Sprites\Play.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Resources\Audio\Music\gameOver.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Audio\Music\gameTrack.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Audio\Music\titleScreen.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Audio\SFX\buttonClick.wav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CustomToolNamespace></CustomToolNamespace>
+    </Content>
+    <Content Include="Resources\Audio\SFX\gameOver.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CustomToolNamespace></CustomToolNamespace>
+    </Content>
+    <Content Include="Resources\Audio\SFX\lineClear.wav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CustomToolNamespace></CustomToolNamespace>
+    </Content>
+    <Content Include="Resources\Audio\SFX\movePiece.wav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CustomToolNamespace></CustomToolNamespace>
+    </Content>
+    <Content Include="Resources\Audio\SFX\rotatePiece.wav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CustomToolNamespace></CustomToolNamespace>
+    </Content>
+    <Content Include="Resources\Sprites\Pause.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Sprites\Play.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>

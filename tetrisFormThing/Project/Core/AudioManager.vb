@@ -56,6 +56,7 @@ Public Class AudioManager
         StopMusic()
 
         currentMusicReader = New AudioFileReader(musicPaths(track))
+        Debug.WriteLine("Labubu" & musicPaths(track))
         currentMusicReader.Volume = musicVolume
 
         currentMusicOutput = New WaveOutEvent()

@@ -246,6 +246,7 @@
 
     End Sub
     Private Sub SoftDrop()
+        audioManager.PlaySFX(SoundEffect.MovePiece)
         softDropDebounce = True
     End Sub
     Private Sub AttemptRightRotation()
